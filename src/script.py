@@ -41,7 +41,7 @@ with open(argv[1], 'r') as f:
                 state = 4
             state += cnt
             if state == 4:
-                print('    gen(p, \'%s\')'%s)
+                print('        gen(p, \'%s\')'%s, end='\n\n')
 
         elif state == 4:
             if re.search(r'def p_error', line):
