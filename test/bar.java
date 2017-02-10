@@ -1,5 +1,5 @@
-public class MyFirstJavaProgram {
-       public static void main(String []args) {
-                 System.out.println("Hello World");
-                    }
+public class bar {
+        public static void main(String []args) {
+                int b = 6+5;
+        }
 }

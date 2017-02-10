@@ -5,21 +5,22 @@ i = 0
 
 def createNode(s):
     global i
+    global graph
     p = pydot.Node(str(i), label=s)
     i += 1
     graph.add_node(p)
-    #print "made node"
-    #  if i == 20:
-        #  graph.write_png('example2_graph.png')
-
+    #print("Added node " + repr(i) + " with label " + s)
     return p
 
 def gen(p, s):
+    global graph
     p[0] = createNode(s)
     for i in range(1,len(p)):
         if (type(p[i]) != pydot.Node):
+            p[i] = str(p[i])
+            print(p[i], type(p[i]))
             p[i] = createNode(p[i])
-        graph.add_edge(pydot.Edge(p[0],p[i]))
+        graph.add_edge(pydot.Edge(p[0], p[i]))
 
 #!/usr/bin/env python2
 
@@ -1740,6 +1741,7 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 
     def p_goal_compilation_unit(self, p):
         '''goal : PLUSPLUS compilation_unit'''
+        gen(p, 'goal_compilation_unit')
         gen(p, 'goal_compilation_unit')
 
     def p_goal_expression(self, p):
