@@ -1,4 +1,4 @@
-import src.parser2 as plyj
+import parser2 as plyj
 from sys import argv
 
 parser = plyj.Parser()
