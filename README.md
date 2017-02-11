@@ -1,12 +1,12 @@
-Instructions to run script:
+Instructions to generate almost complete parser:
 
-python src/gen_dot_parser_from_parser.py src/parser.py > src/parser2.py
+python old/gen_dot_parser_from_parser.py old/parser.py > src/almost_complete_parser.py
 
-The program generated is parser2.py which is the required parsing file with actions that add edges to the Parse tree.
+The program generated is almost_complete_parser.py which is the required parsing file with actions that add edges to the Parse tree.
 
 To parse a file
 
-python tmp.py test/bar.java > out.py
-python out.py
+cd src
+make
 
-Generates the parse tree in the test folder as "example1.png"
+Generates the parse tree in the test folder as "graph.png"
