@@ -6,7 +6,7 @@ The program generated is parser2.py which is the required parsing file with acti
 
 To parse a file
 
-python src/tmp.py test/bar.java
+python tmp.py test/bar.java > out.py
+python out.py
 
-Generates the parse tree in the test folder as "example1_graph.png"
-*Currently not working as expected*
+Generates the parse tree in the test folder as "example1.png"
