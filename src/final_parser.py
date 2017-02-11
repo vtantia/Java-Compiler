@@ -8,19 +8,17 @@ def createNode(s):
     p = pydot.Node(str(i), label=s)
     i += 1
     graph.add_node(p)
-    #print("Added node " + repr(i) + " with label " + s)
     return p
 
 def gen(p, s):
     global graph
     p[0] = createNode(s)
-    for i in range(1,len(p)):
+    for i in range(1, len(p)):
         if (type(p[i]) != pydot.Node):
             p[i] = str(p[i])
             p[i] = createNode(p[i])
         graph.add_edge(pydot.Edge(p[0], p[i]))
-
-#!/usr/bin/env python2
+        
 
 import ply.lex as lex
 import ply.yacc as yacc
@@ -45,7 +43,6 @@ class MyLexer(object):
         'NUM',
         'CHAR_LITERAL',
         'STRING_LITERAL',
-        'LINE_COMMENT', 'BLOCK_COMMENT',
 
         'OR', 'AND',
         'EQ', 'NEQ', 'GTEQ', 'LTEQ',
@@ -1029,17 +1026,6 @@ class TypeParser(object):
         '''generic_type : class_or_interface '<' '>' '''
         gen(p, 'generic_type2')
 
-#    def p_array_type(self, p):
-#        '''array_type : primitive_type dims
-#                      | name dims
-#                      | array_type_with_type_arguments_name dims
-#                      | generic_type dims'''
-#       gen(p, 'array_type')
-#
-#    def p_array_type_with_type_arguments_name(self, p):
-#        '''array_type_with_type_arguments_name : generic_type '.' name'''
-        # gen(p, 'array_type_with_type_arguments_name')
-
     def p_array_type(self, p):
         '''array_type : primitive_type dims
                       | name dims'''
@@ -1740,7 +1726,6 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
     def p_goal_compilation_unit(self, p):
         '''goal : PLUSPLUS compilation_unit'''
         gen(p, 'goal_compilation_unit')
-        # gen(p, 'goal_compilation_unit')
 
     def p_goal_expression(self, p):
         '''goal : MINUSMINUS expression'''
@@ -1755,6 +1740,7 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 
     def p_empty(self, p):
         '''empty :'''
+        # gen(p, 'empty')
 
 class Parser(object):
 
@@ -1789,10 +1775,12 @@ class Parser(object):
         if type(_file) == str:
             _file = open(_file)
         content = _file.read()
-        return self.parse_string(content, debug=debug)
+        global graph
+        parse_ret = self.parse_string(content, debug=debug)
+        graph.write_png('graph.png')
+        return parse_ret
 
 if __name__ == '__main__':
-    # for testing
     lexer = lex.lex(module=MyLexer())
     parser = yacc.yacc(module=MyParser(), write_tables=0, start='type_parameters')
 
@@ -1810,6 +1798,3 @@ if __name__ == '__main__':
         t = parser.parse(expr, lexer=lexer, debug=1)
         print('result: {}'.format(t))
         print('--------------------------------')
-
-
-graph.write_png('example1_graph.png')
