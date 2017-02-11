@@ -1,6 +1,6 @@
 Instructions to run script:
 
-python src/script.py src/parser.py > src/parser2.py
+python src/gen_dot_parser_from_parser.py src/parser.py > src/parser2.py
 
 The program generated is parser2.py which is the required parsing file with actions that add edges to the Parse tree.
 
