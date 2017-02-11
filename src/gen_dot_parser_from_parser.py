@@ -24,6 +24,8 @@ print(to_print)
 import re
 from sys import argv
 state = 1
+index = 0
+rule_lhs = ''
 
 def printSameLine(line):
     line = line.replace('.model', 'model')
@@ -31,6 +33,12 @@ def printSameLine(line):
 
 def matchDefP(line):
     return re.search(r'def p_(.*?)\(.*?\):', line)
+
+def handleMatch(match, line):
+    global state, index, rule_lhs
+    rule_lhs = match.group(1)
+    index = line.index('def')
+    state = 2
 
 with open(argv[1], 'r') as f:
     for line in f:
@@ -43,8 +51,7 @@ with open(argv[1], 'r') as f:
             match = matchDefP(line)
             printSameLine(line)
             if match:
-                s = match.group(1)
-                state = 2
+                handleMatch(match, line)
 
         elif state == 2 or state == 3:
             printSameLine(line)
@@ -53,7 +60,7 @@ with open(argv[1], 'r') as f:
                 state = 4
             state += cnt
             if state == 4:
-                print('        gen(p, \'%s\')'%s, end='\n\n')
+                print(' '*(index+4) + 'gen(p, \'%s\')'%rule_lhs, end='\n\n')
 
         elif state == 4:
             # if re.search(r'def p_error', line):
@@ -63,8 +70,7 @@ with open(argv[1], 'r') as f:
                 state = 1
             elif match:
                 printSameLine(line)
-                s = match.group(1)
-                state = 2
+                handleMatch(match, line)
             elif re.search(r'def.*?:', line):
                 printSameLine(line)
                 state = 1
