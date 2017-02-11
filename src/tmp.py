@@ -1,4 +1,4 @@
-import final_parser as plyj
+import vin_parser as plyj
 from sys import argv
 
 parser = plyj.Parser()
