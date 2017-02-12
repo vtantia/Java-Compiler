@@ -16,7 +16,10 @@ make clean
 ```
 
 # Tests
-These tests should be used:
+This test file should be used for lexer:
+* LexerTest.java
+
+These test files should be used for parser:
 * BinaryConverter.java
 * Factorial.java
 * ObjectVarsAsParameters.java
