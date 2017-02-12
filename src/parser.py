@@ -1646,11 +1646,15 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
         gen(p, 'goal_statement')
 
     def p_error(self, p):
-        print('error: {}'.format(p))
+        print('Error: \'{}\' at line no: {}'.format(p.value, p.lineno))
+        with open(argv[1],'r') as fp:
+            for i, line in enumerate(fp):
+                if i == p.lineno:
+                    print(line)
 
     def p_empty(self, p):
         '''empty :'''
-        # gen(p, 'empty')
+        gen(p, 'empty')
 
 class Parser(object):
 

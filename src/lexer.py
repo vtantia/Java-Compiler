@@ -2,6 +2,7 @@
 
 import ply.lex as lex
 from model import *
+from sys import argv
 
 class MyLexer(object):
 
@@ -99,14 +100,14 @@ class MyLexer(object):
 if __name__ == '__main__':
     lexer = lex.lex(module=MyLexer())
 
-    expressions = [
-        '<T extends Foo & Bar>'
-    ]
+    _file = argv[1]
+    if type(_file) == str:
+        _file = open(_file)
+    expr = _file.read()
 
-    for expr in expressions:
-        print('lexing expression {}'.format(expr))
-        lexer.input(expr)
-        for token in lexer:
-            print(token)
+    print('lexing expression {}'.format(expr))
+    lexer.input(expr)
+    for token in lexer:
+        print(token)
 
-        print('--------------------------------')
+    print('--------------------------------')
