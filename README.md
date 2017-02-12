@@ -1,12 +1,21 @@
-Instructions to generate almost complete parser:
+# Instructions to run
 
-python old/gen_dot_parser_from_parser.py old/parser.py > src/almost_complete_parser.py
+## To extract tokens using lexer:
+src/lexer.py <input_file>
 
-The program generated is almost_complete_parser.py which is the required parsing file with actions that add edges to the Parse tree.
+## To parse a file - Generates the parse tree in "graph.png"
+src/parser.py <input_file>
 
-To parse a file
 
-cd src
-make
+## To clean the temporary files and graph
+make clean
 
-Generates the parse tree in the test folder as "graph.png"
+# Dependencies
+* python2 or python3
+* pydot
+* ply
+
+# Acknowledgments:
+* We have modified the lexer and parser from https://github.com/musiKk/plyj.
+* Graph has been generated using pydot library.
+* For scanner and parser, we are using ply (python-lex-yacc).
