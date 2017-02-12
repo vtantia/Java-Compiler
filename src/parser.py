@@ -1,12 +1,20 @@
+#!/usr/bin/python3
+
 import pydot
+import ply.lex as lex
+import ply.yacc as yacc
+from lexer import MyLexer
+from model import *
+from sys import argv
+
 graph = pydot.Dot(graph_type='digraph')
 
-i = 0
+ctr = 0
 
 def createNode(s):
-    global i, graph
-    p = pydot.Node(str(i), label=s)
-    i += 1
+    global ctr, graph
+    p = pydot.Node(str(ctr), label=s)
+    ctr += 1
     graph.add_node(p)
     return p
 
@@ -18,104 +26,6 @@ def gen(p, s):
             p[i] = str(p[i])
             p[i] = createNode(p[i])
         graph.add_edge(pydot.Edge(p[0], p[i]))
-        
-
-import ply.lex as lex
-import ply.yacc as yacc
-from model import *
-
-class MyLexer(object):
-
-    keywords = ('this', 'class', 'void', 'super', 'extends', 'implements', 'enum', 'interface',
-                'byte', 'short', 'int', 'long', 'char', 'float', 'double', 'boolean', 'null',
-                'true', 'false',
-                'final', 'public', 'protected', 'private', 'abstract', 'static', 'strictfp', 'transient', 'volatile',
-                'synchronized', 'native',
-                'throws', 'default',
-                'instanceof',
-                'if', 'else', 'while', 'for', 'switch', 'case', 'assert', 'do',
-                'break', 'continue', 'return', 'throw', 'try', 'catch', 'finally', 'new',
-                'package', 'import'
-    )
-
-    tokens = [
-        'NAME',
-        'NUM',
-        'CHAR_LITERAL',
-        'STRING_LITERAL',
-
-        'OR', 'AND',
-        'EQ', 'NEQ', 'GTEQ', 'LTEQ',
-        'LSHIFT', 'RSHIFT', 'RRSHIFT',
-
-        'TIMES_ASSIGN', 'DIVIDE_ASSIGN', 'REMAINDER_ASSIGN',
-        'PLUS_ASSIGN', 'MINUS_ASSIGN', 'LSHIFT_ASSIGN', 'RSHIFT_ASSIGN', 'RRSHIFT_ASSIGN',
-        'AND_ASSIGN', 'OR_ASSIGN', 'XOR_ASSIGN',
-
-        'PLUSPLUS', 'MINUSMINUS',
-
-        'ELLIPSIS'
-    ] + [k.upper() for k in keywords]
-    literals = '()+-*/=?:,.^|&~!=[]{};<>@%'
-
-    t_NUM = r'\.?[0-9][0-9eE_lLdDa-fA-F.xXpP]*'
-    t_CHAR_LITERAL = r'\'([^\\\n]|(\\.))*?\''
-    t_STRING_LITERAL = r'\"([^\\\n]|(\\.))*?\"'
-
-    t_ignore_LINE_COMMENT = '//.*'
-
-    def t_BLOCK_COMMENT(self, t):
-        r'/\*(.|\n)*?\*/'
-        t.lexer.lineno += t.value.count('\n')
-
-    t_OR = r'\|\|'
-    t_AND = '&&'
-
-    t_EQ = '=='
-    t_NEQ = '!='
-    t_GTEQ = '>='
-    t_LTEQ = '<='
-
-    t_LSHIFT = '<<'
-    t_RSHIFT = '>>'
-    t_RRSHIFT = '>>>'
-
-    t_TIMES_ASSIGN = r'\*='
-    t_DIVIDE_ASSIGN = '/='
-    t_REMAINDER_ASSIGN = '%='
-    t_PLUS_ASSIGN = r'\+='
-    t_MINUS_ASSIGN = '-='
-    t_LSHIFT_ASSIGN = '<<='
-    t_RSHIFT_ASSIGN = '>>='
-    t_RRSHIFT_ASSIGN = '>>>='
-    t_AND_ASSIGN = '&='
-    t_OR_ASSIGN = r'\|='
-    t_XOR_ASSIGN = '\^='
-
-    t_PLUSPLUS = r'\+\+'
-    t_MINUSMINUS = r'\-\-'
-
-    t_ELLIPSIS = r'\.\.\.'
-
-    t_ignore = ' \t\f'
-
-    def t_NAME(self, t):
-        '[A-Za-z_$][A-Za-z0-9_$]*'
-        if t.value in MyLexer.keywords:
-            t.type = t.value.upper()
-        return t
-
-    def t_newline(self, t):
-        r'\n+'
-        t.lexer.lineno += len(t.value)
-
-    def t_newline2(self, t):
-        r'(\r\n)+'
-        t.lexer.lineno += len(t.value) / 2
-
-    def t_error(self, t):
-        print("Illegal character '{}' ({}) in line {}".format(t.value[0], hex(ord(t.value[0])), t.lexer.lineno))
-        t.lexer.skip(1)
 
 class ExpressionParser(object):
 
@@ -1781,20 +1691,5 @@ class Parser(object):
         return parse_ret
 
 if __name__ == '__main__':
-    lexer = lex.lex(module=MyLexer())
-    parser = yacc.yacc(module=MyParser(), write_tables=0, start='type_parameters')
-
-    expressions = [
-        '<T extends Foo & Bar>'
-    ]
-
-    for expr in expressions:
-        print('lexing expression {}'.format(expr))
-        lexer.input(expr)
-        for token in lexer:
-            print(token)
-
-        print('parsing expression {}'.format(expr))
-        t = parser.parse(expr, lexer=lexer, debug=1)
-        print('result: {}'.format(t))
-        print('--------------------------------')
+    parser = Parser()
+    tree = parser.parse_file(argv[1])

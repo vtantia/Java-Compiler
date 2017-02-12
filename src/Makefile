@@ -1,5 +1,5 @@
-all: final_parser.py gen_graph.py ../test/bar.java
-	python gen_graph.py ../test/bar.java
+all: lexer.py parser.py model.py ../test/bar.java
+	./parser.py ../test/bar.java
 
 clean:
 	rm -rf __pycache__
