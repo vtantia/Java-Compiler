@@ -3,9 +3,8 @@
 ## To extract tokens using lexer:
 src/lexer.py <input_file>
 
-## To parse a file - Generates the parse tree in "graph.png"
+## To parse a file - Generates the parse tree in "graphs" folder
 src/parser.py <input_file>
-
 
 ## To clean the temporary files and graph
 make clean

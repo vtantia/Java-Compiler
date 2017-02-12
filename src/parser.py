@@ -1693,7 +1693,10 @@ class Parser(object):
         content = _file.read()
         global graph
         parse_ret = self.parse_string(content, debug=debug)
-        graph.write_png('graph.png')
+        out_file = argv[1]
+        out_file = out_file.replace('test/','graphs/')
+        out_file = out_file.replace('.java','.png')
+        graph.write_png(out_file)
         return parse_ret
 
 if __name__ == '__main__':

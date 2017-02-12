@@ -4,3 +4,4 @@ parsetab.py
 graph.png
 *.swp
 *.out
+graphs/*
