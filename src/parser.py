@@ -6,13 +6,20 @@ import ply.yacc as yacc
 from lexer import MyLexer
 from model import *
 from sys import argv
+import os
 
 graph = pydot.Dot(graph_type='digraph')
 
 ctr = 0
 
+def replace_whitespaces(s):
+    s = s.replace('\\n', 'newline')
+    s = s.replace('\\t', 'tab')
+    return s
+
 def createNode(s):
     global ctr, graph
+    s = replace_whitespaces(s)
     if '"' not in s:
         s = '"' + s + '"' # In order to avoid errors which pydot(graphviz) gives for comma, colon and some other symbols
     p = pydot.Node(str(ctr), label=s)
@@ -1694,8 +1701,11 @@ class Parser(object):
         global graph
         parse_ret = self.parse_string(content, debug=debug)
         out_file = argv[1]
-        out_file = out_file.replace('test/','graphs/')
+        out_file = out_file.replace('tests/','graphs/')
         out_file = out_file.replace('.java','.png')
+        dir = 'graphs'
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         graph.write_png(out_file)
         return parse_ret
 

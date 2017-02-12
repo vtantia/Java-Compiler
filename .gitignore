@@ -1,7 +1,6 @@
 __pycache__
 lextab.py
 parsetab.py
-graph.png
 *.swp
 *.out
-graphs/*
+graphs
