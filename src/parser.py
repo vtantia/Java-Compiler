@@ -8,7 +8,7 @@ from model import *
 from sys import argv
 import os
 
-graph = pydot.Dot(graph_type='digraph')
+graph = pydot.Dot(graph_type='digraph', ordering='out')
 
 ctr = 0
 

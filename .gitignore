@@ -4,3 +4,4 @@ parsetab.py
 *.swp
 *.out
 graphs
+*.pyc
