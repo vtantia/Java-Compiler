@@ -2,12 +2,12 @@
 
 ## To extract tokens using lexer:
 ```
-src/lexer.py <input_file>
+src/parser.py -l <input_file>
 ```
 
 ## To parse a file - Generates the parse tree in "graphs" folder with the same name
 ```
-src/parser.py <input_file>
+src/parser.py -p <input_file>
 ```
 
 ## To clean the temporary files and graph

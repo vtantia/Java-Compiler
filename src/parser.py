@@ -3,14 +3,11 @@
 import pydot
 import ply.lex as lex
 import ply.yacc as yacc
-from lexer import MyLexer
 from model import *
 from sys import argv
 import os
 
-graph = pydot.Dot(graph_type='digraph', ordering='out')
-
-ctr = 0
+#  global graph, ctr
 
 def replace_whitespaces(s):
     s = s.replace('\\n', 'newline')
@@ -35,6 +32,99 @@ def gen(p, s):
             p[i] = str(p[i])
             p[i] = createNode(p[i])
         graph.add_edge(pydot.Edge(p[0], p[i]))
+
+class MyLexer(object):
+
+    keywords = ('this', 'class', 'void', 'super', 'extends', 'implements', 'enum', 'interface',
+                'byte', 'short', 'int', 'long', 'char', 'float', 'double', 'boolean', 'null',
+                'true', 'false',
+                'final', 'public', 'protected', 'private', 'abstract', 'static', 'strictfp', 'transient', 'volatile',
+                'synchronized', 'native',
+                'throws', 'default',
+                'instanceof',
+                'if', 'else', 'while', 'for', 'switch', 'case', 'assert', 'do',
+                'break', 'continue', 'return', 'throw', 'try', 'catch', 'finally', 'new',
+                'package', 'import'
+    )
+
+    tokens = [
+        'NAME',
+        'NUM',
+        'CHAR_LITERAL',
+        'STRING_LITERAL',
+
+        'OR', 'AND',
+        'EQ', 'NEQ', 'GTEQ', 'LTEQ',
+        'LSHIFT', 'RSHIFT', 'RRSHIFT',
+
+        'TIMES_ASSIGN', 'DIVIDE_ASSIGN', 'REMAINDER_ASSIGN',
+        'PLUS_ASSIGN', 'MINUS_ASSIGN', 'LSHIFT_ASSIGN', 'RSHIFT_ASSIGN', 'RRSHIFT_ASSIGN',
+        'AND_ASSIGN', 'OR_ASSIGN', 'XOR_ASSIGN',
+
+        'PLUSPLUS', 'MINUSMINUS',
+
+        'ELLIPSIS'
+    ] + [k.upper() for k in keywords]
+    literals = '()+-*/=?:,.^|&~!=[]{};<>@%'
+
+    t_NUM = r'\.?[0-9][0-9eE_lLdDa-fA-F.xXpP]*'
+    t_CHAR_LITERAL = r'\'([^\\\n]|(\\.))*?\''
+    t_STRING_LITERAL = r'\"([^\\\n]|(\\.))*?\"'
+
+    t_ignore_LINE_COMMENT = '//.*'
+
+    def t_BLOCK_COMMENT(self, t):
+        r'/\*(.|\n)*?\*/'
+        t.lexer.lineno += t.value.count('\n')
+
+    t_OR = r'\|\|'
+    t_AND = '&&'
+
+    t_EQ = '=='
+    t_NEQ = '!='
+    t_GTEQ = '>='
+    t_LTEQ = '<='
+
+    t_LSHIFT = '<<'
+    t_RSHIFT = '>>'
+    t_RRSHIFT = '>>>'
+
+    t_TIMES_ASSIGN = r'\*='
+    t_DIVIDE_ASSIGN = '/='
+    t_REMAINDER_ASSIGN = '%='
+    t_PLUS_ASSIGN = r'\+='
+    t_MINUS_ASSIGN = '-='
+    t_LSHIFT_ASSIGN = '<<='
+    t_RSHIFT_ASSIGN = '>>='
+    t_RRSHIFT_ASSIGN = '>>>='
+    t_AND_ASSIGN = '&='
+    t_OR_ASSIGN = r'\|='
+    t_XOR_ASSIGN = '\^='
+
+    t_PLUSPLUS = r'\+\+'
+    t_MINUSMINUS = r'\-\-'
+
+    t_ELLIPSIS = r'\.\.\.'
+
+    t_ignore = ' \t\f'
+
+    def t_NAME(self, t):
+        '[A-Za-z_$][A-Za-z0-9_$]*'
+        if t.value in MyLexer.keywords:
+            t.type = t.value.upper()
+        return t
+
+    def t_newline(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
+
+    def t_newline2(self, t):
+        r'(\r\n)+'
+        t.lexer.lineno += len(t.value) / 2
+
+    def t_error(self, t):
+        print("Illegal character '{}' ({}) in line {}".format(t.value[0], hex(ord(t.value[0])), t.lexer.lineno))
+        t.lexer.skip(1)
 
 class ExpressionParser(object):
 
@@ -1644,21 +1734,21 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 
     def p_goal_compilation_unit(self, p):
         '''goal : PLUSPLUS compilation_unit'''
-        gen(p, 'goal')
+        # gen(p, 'goal')
 
     def p_goal_expression(self, p):
         '''goal : MINUSMINUS expression'''
-        gen(p, 'goal')
+        # gen(p, 'goal')
 
     def p_goal_statement(self, p):
         '''goal : '*' block_statement'''
-        gen(p, 'goal')
+        # gen(p, 'goal')
 
     def p_error(self, p):
         print('Error: \'{}\' at line no: {}'.format(p.value, p.lineno))
-        with open(argv[1],'r') as fp:
+        with open(argv[2],'r') as fp:
             for i, line in enumerate(fp):
-                if i == p.lineno:
+                if i+1 == p.lineno:
                     print(line)
 
     def p_empty(self, p):
@@ -1682,6 +1772,7 @@ class Parser(object):
         content = ''
         for line in _file:
             content += line
+        _file.close()
         return self.tokenize_string(content)
 
     def parse_expression(self, code, debug=0, lineno=1):
@@ -1698,17 +1789,39 @@ class Parser(object):
         if type(_file) == str:
             _file = open(_file)
         content = _file.read()
-        global graph
+        _file.close()
         parse_ret = self.parse_string(content, debug=debug)
-        out_file = argv[1]
-        out_file = out_file.replace('tests/','graphs/')
-        out_file = out_file.replace('.java','.png')
-        dir = 'graphs'
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        graph.write_png(out_file)
         return parse_ret
 
-if __name__ == '__main__':
-    parser = Parser()
-    tree = parser.parse_file(argv[1])
+# initialize Parser
+parser = Parser()
+
+if len(argv) != 3:
+    print('To run script: src/parser.py <mode> <path_to_file> ')
+    exit()
+
+if argv[2].find('.java') == -1:
+    print('\'{}\' is not a .java file'.format(argv[2]))
+    exit()
+elif not os.path.isfile(argv[2]):
+    print('file \'{}\' does not exists'.format(argv[2]))
+    exit()
+
+# for Tokenizing a file
+if argv[1] == '-l':
+    parser.tokenize_file(argv[2])
+    exit()
+elif argv[1] == '-p':
+    graph = pydot.Dot(graph_type='digraph', ordering='out')
+    ctr = 0
+    tree = parser.parse_file(argv[2])
+    out_file = argv[2]
+    out_file = out_file.replace('tests/','graphs/')
+    out_file = out_file.replace('.java','.png')
+    dir = 'graphs'
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    graph.write_png(out_file)
+    print('Parse tree output in file \'{}\''.format(out_file))
+else:
+    print('No such option \'{}\''.format(argv[1]))
