@@ -28,12 +28,16 @@ def createNode(s):
 
 def gen(p, s):
     global graph
-    p[0] = createNode(s)
+    p[0] = {}
+    p[0]['name'] = s
+    p[0]['PD_Node'] = createNode(s)
     for i in range(1, len(p)):
-        if (type(p[i]) != pydot.Node):
-            p[i] = str(p[i])
-            p[i] = createNode(p[i])
-        graph.add_edge(pydot.Edge(p[0], p[i]))
+        if not isinstance(p[i], dict):
+            nodeName = p[i]
+            p[i] = {}
+            p[i]['name'] = nodeName
+            p[i]['PD_Node'] = createNode(nodeName)
+        graph.add_edge(pydot.Edge(p[0]['PD_Node'], p[i]['PD_Node']))
 
 def RecPrint(table, count):
     for key in table:
@@ -514,11 +518,41 @@ class StatementParser(object):
         '''variable_declarators : variable_declarator
                                 | variable_declarators ',' variable_declarator'''
         gen(p, 'variable_declarators')
+        p[0]['type'] = p[1]['type']
 
     def p_variable_declarator(self, p):
         '''variable_declarator : variable_declarator_id
                                | variable_declarator_id '=' variable_initializer'''
         gen(p, 'variable_declarator')
+
+        # if first declaration then no comma else a comma exists
+        typeSource = p[-1]
+        if p[-1] == ',':
+            typeSource = p[-2]
+
+        p[0]['type'] = typeSource['type']
+        # TODO deal with the initialization rule
+
+        # using a prefix 'var_' for all variables in symbol table
+        lastTable = top(symTabStack)
+        varName = 'var_' + p[1]['name']
+
+        # Check if already declared
+        # If declared, then print an error and continue, else add to symbol table
+        if lastTable.get(varName):
+            print('Variable {} defined at line #: {} already defined in the same scope at line # {}'.format(p[1]['name'], p.lineno, lastTable[varName]['lineNo']))
+        else:
+            lastTable[varName] = {}
+            lastTable[varName]['type'] = p[0]['type']
+            lastTable[varName]['lineNo'] = p.lineno
+
+            # TODO Handle sizes of various data types
+            lastTable[varName]['size'] = p[1]['count'] * 4
+
+            # set offset for new variable(s) and update the offset value in symbol table
+            lastTable[varName]['offset'] = lastTable['offset'] + lastTable[varName]['size']
+            lastTable['offset'] = lastTable[varName]['offset']
+
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
@@ -1003,6 +1037,7 @@ class TypeParser(object):
         '''type : primitive_type
                 | reference_type'''
         gen(p, 'type')
+        p[0]['type'] = p[1]['type']
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -1015,11 +1050,14 @@ class TypeParser(object):
                           | FLOAT
                           | DOUBLE'''
         gen(p, 'primitive_type')
+        p[0]['type'] = p[1]['name']
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
                           | array_type'''
         gen(p, 'reference_type')
+        p[0]['type'] = p[1]['name']
+        # TODO construct p[0]['name'], Can't be simply done by p[1]['name']
 
     def p_class_or_interface_type(self, p):
         '''class_or_interface_type : class_or_interface
@@ -1231,9 +1269,9 @@ class ClassParser(object):
 
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
-        # symTabStack.pop()
         lastTable = top(symTabStack);
         lastTable[p[3]] = {}
+        lastTable[p[3]]['offset'] = 0
         symTabStack.append(lastTable[p[3]])
         gen(p, 'class_header_name1')
 
@@ -1329,6 +1367,7 @@ class ClassParser(object):
         if (name == '('):
             name = p[2]
         lastTable[name] = {}
+        lastTable[name]['offset'] = 0
         symTabStack.append(lastTable[name])
         gen(p, 'constructor_header_name')
 
@@ -1843,6 +1882,7 @@ elif argv[1] == '-p':
 
     global gst
     gst = {}
+    gst['offset'] = 0
     global symTabStack
     symTabStack = [gst]
 
