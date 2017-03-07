@@ -41,9 +41,11 @@ def gen(p, s):
 
 def RecPrint(table, count):
     for key in table:
-        print('\t'*count + key)
         if isinstance(table[key], dict):
+            print('\t'*count + key)
             RecPrint(table[key], count+1)
+        else:
+            print('\t'*count + key + '\t'*2 + str(table[key]))
 
 class MyLexer(object):
 
@@ -535,16 +537,16 @@ class StatementParser(object):
 
         # using a prefix 'var_' for all variables in symbol table
         lastTable = top(symTabStack)
-        varName = 'var_' + p[1]['name']
+        varName = 'var_' + p[1]['varName']
 
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
         if lastTable.get(varName):
-            print('Variable {} defined at line #: {} already defined in the same scope at line # {}'.format(p[1]['name'], p.lineno, lastTable[varName]['lineNo']))
+            print('Variable \'{}\' at line # {} already defined in the same scope at line # {}'.format(p[1]['varName'], lexUnit.lineno, lastTable[varName]['lineNo']))
         else:
             lastTable[varName] = {}
             lastTable[varName]['type'] = p[0]['type']
-            lastTable[varName]['lineNo'] = p.lineno
+            lastTable[varName]['lineNo'] = lexUnit.lineno
 
             # TODO Handle sizes of various data types
             lastTable[varName]['size'] = p[1]['count'] * 4
@@ -557,6 +559,8 @@ class StatementParser(object):
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
         gen(p, 'variable_declarator_id')
+        p[0]['count'] = 1
+        p[0]['varName'] = p[1]['name']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
@@ -1433,6 +1437,7 @@ class ClassParser(object):
         if (name == '('):
             name = p[3]
         lastTable[name] = {}
+        lastTable[name]['offset'] = 0
         symTabStack.append(lastTable[name])
         gen(p, 'method_header_name')
 
@@ -1826,6 +1831,8 @@ class Parser(object):
     def __init__(self):
         self.lexer = lex.lex(module=MyLexer(), optimize=1)
         self.parser = yacc.yacc(module=MyParser(), start='goal', optimize=1)
+        global lexUnit
+        lexUnit = self.lexer
 
     def tokenize_string(self, code):
         self.lexer.input(code)
