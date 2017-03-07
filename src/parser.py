@@ -8,6 +8,8 @@ from sys import argv
 import os
 
 #  global graph, ctr
+def top(arr):
+    return arr[len(arr)-1]
 
 def replace_whitespaces(s):
     s = s.replace('\\n', 'newline')
@@ -1210,6 +1212,7 @@ class ClassParser(object):
     def p_class_declaration(self, p):
         '''class_declaration : class_header class_body'''
         gen(p, 'class_declaration')
+        symTabStack.pop()
 
     def p_class_header(self, p):
         '''class_header : class_header_name class_header_extends_opt class_header_implements_opt'''
@@ -1222,6 +1225,10 @@ class ClassParser(object):
 
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
+        # symTabStack.pop()
+        lastTable = top(symTabStack);
+        lastTable[p[3]] = {}
+        symTabStack.append(lastTable[p[3]])
         gen(p, 'class_header_name1')
 
     def p_class_header_extends_opt(self, p):
@@ -1301,6 +1308,7 @@ class ClassParser(object):
 
     def p_constructor_declaration(self, p):
         '''constructor_declaration : constructor_header method_body'''
+        symTabStack.pop()
         gen(p, 'constructor_declaration')
 
     def p_constructor_header(self, p):
@@ -1310,6 +1318,12 @@ class ClassParser(object):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
+        lastTable = top(symTabStack);
+        name = p[3]
+        if (name == '('):
+            name = p[2]
+        lastTable[name] = {}
+        symTabStack.append(lastTable[name])
         gen(p, 'constructor_header_name')
 
     def p_formal_parameter_list_opt(self, p):
@@ -1355,6 +1369,7 @@ class ClassParser(object):
     def p_method_declaration(self, p):
         '''method_declaration : abstract_method_declaration
                               | method_header method_body'''
+        symTabStack.pop()
         gen(p, 'method_declaration')
 
     def p_abstract_method_declaration(self, p):
@@ -1368,6 +1383,12 @@ class ClassParser(object):
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type_parameters type NAME '('
                               | modifiers_opt type NAME '(' '''
+        lastTable = top(symTabStack);
+        name = p[4]
+        if (name == '('):
+            name = p[3]
+        lastTable[name] = {}
+        symTabStack.append(lastTable[name])
         gen(p, 'method_header_name')
 
     def p_method_header_extended_dims(self, p):
@@ -1796,7 +1817,7 @@ class Parser(object):
 # initialize Parser
 parser = Parser()
 
-if len(argv) != 3:
+if len(argv) < 3:
     print('To run script: src/parser.py <mode> <path_to_file> ')
     exit()
 
@@ -1813,15 +1834,26 @@ if argv[1] == '-l':
     exit()
 elif argv[1] == '-p':
     graph = pydot.Dot(graph_type='digraph', ordering='out')
+
+    global gst
+    gst = {}
+    global symTabStack
+    symTabStack = [gst]
+
     ctr = 0
     tree = parser.parse_file(argv[2])
-    out_file = argv[2]
-    out_file = out_file.replace('tests/','graphs/')
-    out_file = out_file.replace('.java','.png')
-    dir = 'graphs'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    graph.write_png(out_file)
-    print('Parse tree output in file \'{}\''.format(out_file))
+    for key in gst:
+        print(key)
+        for next in gst[key]:
+            print("\t" + next)
+    if (len(argv) == 4):
+        out_file = argv[2]
+        out_file = out_file.replace('tests/','graphs/')
+        out_file = out_file.replace('.java','.png')
+        dir = 'graphs'
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        graph.write_png(out_file)
+        print('Parse tree output in file \'{}\''.format(out_file))
 else:
     print('No such option \'{}\''.format(argv[1]))
