@@ -35,6 +35,12 @@ def gen(p, s):
             p[i] = createNode(p[i])
         graph.add_edge(pydot.Edge(p[0], p[i]))
 
+def RecPrint(table, count):
+    for key in table:
+        print('\t'*count + key)
+        if isinstance(table[key], dict):
+            RecPrint(table[key], count+1)
+
 class MyLexer(object):
 
     keywords = ('this', 'class', 'void', 'super', 'extends', 'implements', 'enum', 'interface',
@@ -1842,10 +1848,7 @@ elif argv[1] == '-p':
 
     ctr = 0
     tree = parser.parse_file(argv[2])
-    for key in gst:
-        print(key)
-        for next in gst[key]:
-            print("\t" + next)
+    RecPrint(gst, 0)
     if (len(argv) == 4):
         out_file = argv[2]
         out_file = out_file.replace('tests/','graphs/')
