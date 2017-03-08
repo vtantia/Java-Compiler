@@ -7,7 +7,7 @@ from model import *
 from sys import argv
 import os
 
-#  global graph, ctr
+#  global ptree, ctr, ast
 def top(arr):
     return arr[len(arr)-1]
 
@@ -16,8 +16,8 @@ def replace_whitespaces(s):
     s = s.replace('\\t', 'tab')
     return s
 
-def createNode(s):
-    global ctr, graph
+def createNode(s, graph):
+    global ctr
     s = replace_whitespaces(s)
     if '"' not in s:
         s = '"' + s + '"' # In order to avoid errors which pydot(graphviz) gives for comma, colon and some other symbols
@@ -27,17 +27,29 @@ def createNode(s):
     return p
 
 def gen(p, s):
-    global graph
+    global ptree, ast
     p[0] = {}
-    p[0]['name'] = s
-    p[0]['PD_Node'] = createNode(s)
+    p[0]['ptreeName'] = s
+    p[0]['ptreeNode'] = createNode(s, ptree)
+    if len(p) != 2:
+        p[0]['astName'] = s
+        p[0]['astNode'] = createNode(s, ast)
+
     for i in range(1, len(p)):
         if not isinstance(p[i], dict):
             nodeName = p[i]
             p[i] = {}
-            p[i]['name'] = nodeName
-            p[i]['PD_Node'] = createNode(nodeName)
-        graph.add_edge(pydot.Edge(p[0]['PD_Node'], p[i]['PD_Node']))
+            p[i]['ptreeName'] = nodeName
+            p[i]['astName'] = nodeName
+            p[i]['ptreeNode'] = createNode(nodeName, ptree)
+            p[i]['astNode'] = createNode(nodeName, ast)
+        ptree.add_edge(pydot.Edge(p[0]['ptreeNode'], p[i]['ptreeNode']))
+        if len(p) != 2:
+            ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
+    if len(p) == 2:
+        p[0]['astName'] = p[1]['astName']
+        p[0]['astNode'] = p[1]['astNode']
+
 
 def RecPrint(table, count):
     for key in table:
@@ -548,19 +560,23 @@ class StatementParser(object):
             lastTable[varName]['type'] = p[0]['type']
             lastTable[varName]['lineNo'] = lexUnit.lineno
 
-            # TODO Handle sizes of various data types
+            # If a primitive data type, then get size from the GST
+            # else allocate on heap and store pointer
             lastTable[varName]['size'] = p[1]['count'] * 4
+            if gst.get(p[0]['type']):
+                if gst[p[0]['type']]['desc'] == 'primitive_type':
+                    lastTable[varName]['size'] = p[1]['count'] * gst[p[0]['type']]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
-            lastTable[varName]['offset'] = lastTable['offset'] + lastTable[varName]['size']
-            lastTable['offset'] = lastTable[varName]['offset']
+            lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
+            lastTable['size'] = lastTable[varName]['offset']
 
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
         gen(p, 'variable_declarator_id')
         p[0]['count'] = 1
-        p[0]['varName'] = p[1]['name']
+        p[0]['varName'] = p[1]['ptreeName']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
@@ -1054,14 +1070,14 @@ class TypeParser(object):
                           | FLOAT
                           | DOUBLE'''
         gen(p, 'primitive_type')
-        p[0]['type'] = p[1]['name']
+        p[0]['type'] = p[1]['ptreeName']
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
                           | array_type'''
         gen(p, 'reference_type')
-        p[0]['type'] = p[1]['name']
-        # TODO construct p[0]['name'], Can't be simply done by p[1]['name']
+        p[0]['type'] = p[1]['astName']
+        # TODO construct p[0]['ptreeName'], Can't be simply done by p[1]['ptreeName']
 
     def p_class_or_interface_type(self, p):
         '''class_or_interface_type : class_or_interface
@@ -1274,8 +1290,7 @@ class ClassParser(object):
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
         lastTable = top(symTabStack);
-        lastTable[p[3]] = {}
-        lastTable[p[3]]['offset'] = 0
+        lastTable[p[3]] = {'size': 0, 'desc': 'class'}
         symTabStack.append(lastTable[p[3]])
         gen(p, 'class_header_name1')
 
@@ -1370,8 +1385,7 @@ class ClassParser(object):
         name = p[3]
         if (name == '('):
             name = p[2]
-        lastTable[name] = {}
-        lastTable[name]['offset'] = 0
+        lastTable[name] = {'size': 0, 'desc': 'constructor'}
         symTabStack.append(lastTable[name])
         gen(p, 'constructor_header_name')
 
@@ -1436,8 +1450,7 @@ class ClassParser(object):
         name = p[4]
         if (name == '('):
             name = p[3]
-        lastTable[name] = {}
-        lastTable[name]['offset'] = 0
+        lastTable[name] = {'size': 0, 'desc': 'method'}
         symTabStack.append(lastTable[name])
         gen(p, 'method_header_name')
 
@@ -1885,11 +1898,22 @@ if argv[1] == '-l':
     parser.tokenize_file(argv[2])
     exit()
 elif argv[1] == '-p':
-    graph = pydot.Dot(graph_type='digraph', ordering='out')
+    ptree = pydot.Dot(graph_type='digraph', ordering='out')
+    ast = pydot.Dot(graph_type='digraph', ordering='out')
 
     global gst
-    gst = {}
-    gst['offset'] = 0
+    gst = {
+        'boolean':  {'size': 1, 'desc': 'primitive_type'},
+        'void':     {'size': 0, 'desc': 'primitive_type'},
+        'byte':     {'size': 1, 'desc': 'primitive_type'},
+        'short':    {'size': 2, 'desc': 'primitive_type'},
+        'int':      {'size': 4, 'desc': 'primitive_type'},
+        'long':     {'size': 8, 'desc': 'primitive_type'},
+        'char':     {'size': 1, 'desc': 'primitive_type'},
+        'float':    {'size': 4, 'desc': 'primitive_type'},
+        'double':   {'size': 8, 'desc': 'primitive_type'},
+        'array_type': {'size': 4, 'desc': 'primitive_type'}
+        }
     global symTabStack
     symTabStack = [gst]
 
@@ -1900,10 +1924,12 @@ elif argv[1] == '-p':
         out_file = argv[2]
         out_file = out_file.replace('tests/','graphs/')
         out_file = out_file.replace('.java','.png')
+        out_file_ast = out_file.replace('.png','_ast.png')
         dir = 'graphs'
         if not os.path.exists(dir):
             os.makedirs(dir)
-        graph.write_png(out_file)
+        ptree.write_png(out_file)
+        ast.write_png(out_file_ast)
         print('Parse tree output in file \'{}\''.format(out_file))
 else:
     print('No such option \'{}\''.format(argv[1]))
