@@ -1124,7 +1124,8 @@ class ClassParser(BaseParser):
     def p_class_declaration(self, p):
         '''class_declaration : class_header class_body'''
         self.gen(p, 'class_declaration')
-        self.symTabStack.pop()
+        # self.symTabStack.pop()
+        self.endCurrScope()
 
     def p_class_header(self, p):
         '''class_header : class_header_name class_header_extends_opt class_header_implements_opt'''
@@ -1137,9 +1138,10 @@ class ClassParser(BaseParser):
 
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
-        lastTable = self.symTabStack[-1]
-        lastTable[p[3]] = {'size': 0, 'desc': 'class'}
-        self.symTabStack.append(lastTable[p[3]])
+        # lastTable = self.symTabStack[-1]
+        # lastTable[p[3]] = {'size': 0, 'desc': 'class'}
+        # self.symTabStack.append(lastTable[p[3]])
+        self.startNewScope(p[3], 'class')
         self.gen(p, 'class_header_name1')
 
     def p_class_header_extends_opt(self, p):
@@ -1219,8 +1221,9 @@ class ClassParser(BaseParser):
 
     def p_constructor_declaration(self, p):
         '''constructor_declaration : constructor_header method_body'''
-        self.symTabStack.pop()
         self.gen(p, 'constructor_declaration')
+        # self.symTabStack.pop()
+        self.endCurrScope()
 
     def p_constructor_header(self, p):
         '''constructor_header : constructor_header_name formal_parameter_list_opt ')' method_header_throws_clause_opt'''
@@ -1229,12 +1232,13 @@ class ClassParser(BaseParser):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
-        lastTable = self.symTabStack[-1]
         name = p[3]
         if (name == '('):
             name = p[2]
-        lastTable[name] = {'size': 0, 'desc': 'constructor'}
-        self.symTabStack.append(lastTable[name])
+        # lastTable = self.symTabStack[-1]
+        # lastTable[name] = {'size': 0, 'desc': 'constructor'}
+        # self.symTabStack.append(lastTable[name])
+        self.startNewScope(name, 'constructor')
         self.gen(p, 'constructor_header_name')
 
     def p_formal_parameter_list_opt(self, p):
@@ -1280,8 +1284,9 @@ class ClassParser(BaseParser):
     def p_method_declaration(self, p):
         '''method_declaration : abstract_method_declaration
                               | method_header method_body'''
-        self.symTabStack.pop()
         self.gen(p, 'method_declaration')
+        # self.symTabStack.pop()
+        self.endCurrScope()
 
     def p_abstract_method_declaration(self, p):
         '''abstract_method_declaration : method_header ';' '''
@@ -1294,12 +1299,13 @@ class ClassParser(BaseParser):
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type_parameters type NAME '('
                               | modifiers_opt type NAME '(' '''
-        lastTable = self.symTabStack[-1]
         name = p[4]
         if (name == '('):
             name = p[3]
-        lastTable[name] = {'size': 0, 'desc': 'method'}
-        self.symTabStack.append(lastTable[name])
+        # lastTable = self.symTabStack[-1]
+        # lastTable[name] = {'size': 0, 'desc': 'method'}
+        # self.symTabStack.append(lastTable[name])
+        self.startNewScope(name, 'method')
         self.gen(p, 'method_header_name')
 
     def p_method_header_extended_dims(self, p):

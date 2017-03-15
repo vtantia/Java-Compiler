@@ -21,6 +21,14 @@ class BaseParser(object):
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
 
+    def startNewScope(self, name, desc):
+        currTable = self.symTabStack[-1]
+        currTable[name] = {'size'   : 0,    'desc'  : desc  }
+        self.symTabStack.append(currTable[name])
+
+    def endCurrScope(self):
+        self.symTabStack.pop()
+
     def replace_whitespaces(self, s):
         s = s.replace('\\n', 'newline')
         s = s.replace('\\t', 'tab')
