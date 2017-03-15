@@ -15,6 +15,7 @@ class BaseParser(object):
                             ('array_type', 4)]
         for type, size in type_size_tuples:
             self.gst[type] = {'size': size, 'desc': 'primitive_type'}
+        self.gst['desc'] = 'GLOBAL TABLE'
 
         self.symTabStack = [self.gst]
         self.ptree = pydot.Dot(graph_type='digraph', ordering='out')
@@ -25,8 +26,20 @@ class BaseParser(object):
         currTable = self.symTabStack[-1]
         currTable[name] = {'size'   : 0,    'desc'  : desc  }
         self.symTabStack.append(currTable[name])
+        # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
+
+    def appendNewScope(self, desc):
+        currTable = self.symTabStack[-1]
+        if not currTable.get('blockList'):
+            currTable['blockList'] = []
+
+        newTable = {'size': 0,  'desc': desc    }
+        currTable['blockList'].append(newTable)
+        self.symTabStack.append(newTable)
+        # print('Adding new Table %d %s' % (len(self.symTabStack), newTable['desc']))
 
     def endCurrScope(self):
+        # print('Removing a Table %d %s' % (len(self.symTabStack)-1, self.symTabStack[-1]['desc']))
         self.symTabStack.pop()
 
     def replace_whitespaces(self, s):

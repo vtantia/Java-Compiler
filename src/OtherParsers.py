@@ -339,8 +339,14 @@ class ExpressionParser(BaseParser):
 class StatementParser(BaseParser):
 
     def p_block(self, p):
-        '''block : '{' block_statements_opt '}' '''
+        ''' block : '{' seen_Lbrace block_statements_opt '}' '''
         self.gen(p, 'block')
+        self.endCurrScope()
+
+    def p_seen_Lbrace(self, p):
+        '''seen_Lbrace : empty'''
+        self.gen(p, 'seen_Lbrace')
+        self.appendNewScope('block')
 
     def p_block_statements_opt(self, p):
         '''block_statements_opt : block_statements'''
@@ -541,6 +547,8 @@ class StatementParser(BaseParser):
 
     def p_for_statement(self, p):
         '''for_statement : FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
+        # TODO add the initialized variable to the scope of new block
+        # or remove it after this rule
         self.gen(p, 'for_statement')
 
     def p_for_statement_no_short_if(self, p):

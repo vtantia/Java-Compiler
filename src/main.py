@@ -31,7 +31,7 @@ if __name__=="__main__":
         tree = parser.parse_file(argv[2])
 
         parserObj = parser.parserObj
-        parserObj.recPrint(parserObj.gst, 0) # TODO
+        # parserObj.recPrint(parserObj.gst, 0) # TODO
 
         if len(argv) == 4:
             out_file = argv[2]
