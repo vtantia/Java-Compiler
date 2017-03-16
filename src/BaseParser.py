@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pydot
 
 class BaseParser(object):
@@ -48,7 +49,7 @@ class BaseParser(object):
         return s
 
     def createNode(self, s, graph):
-        s = self.replace_whitespaces(s)
+        s = self.replace_whitespaces(str(s))
         if '"' not in s:
             s = '"' + s + '"' # In order to avoid errors which pydot(graphviz) gives for comma, colon and some other symbols
         p = pydot.Node(str(self.ctr), label=s)

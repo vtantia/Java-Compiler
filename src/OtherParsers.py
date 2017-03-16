@@ -345,7 +345,6 @@ class StatementParser(BaseParser):
 
     def p_seen_Lbrace(self, p):
         '''seen_Lbrace : empty'''
-        self.gen(p, 'seen_Lbrace')
         self.appendNewScope('block')
 
     def p_block_statements_opt(self, p):
@@ -545,15 +544,21 @@ class StatementParser(BaseParser):
         '''while_statement_no_short_if : WHILE '(' expression ')' statement_no_short_if'''
         self.gen(p, 'while_statement_no_short_if')
 
+    def p_seen_FOR(self, p):
+        '''seen_FOR : empty'''
+        self.appendNewScope('FOR')
+
     def p_for_statement(self, p):
-        '''for_statement : FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
+        '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
         # TODO add the initialized variable to the scope of new block
         # or remove it after this rule
         self.gen(p, 'for_statement')
+        self.endCurrScope()
 
     def p_for_statement_no_short_if(self, p):
-        '''for_statement_no_short_if : FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement_no_short_if'''
+        '''for_statement_no_short_if : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement_no_short_if'''
         self.gen(p, 'for_statement_no_short_if')
+        self.endCurrScope()
 
     def p_for_init_opt(self, p):
         '''for_init_opt : for_init
@@ -597,11 +602,11 @@ class StatementParser(BaseParser):
         self.gen(p, 'enhanced_for_statement_header')
 
     def p_enhanced_for_statement_header_init(self, p):
-        '''enhanced_for_statement_header_init : FOR '(' type NAME dims_opt'''
+        '''enhanced_for_statement_header_init : FOR seen_FOR '(' type NAME dims_opt'''
         self.gen(p, 'enhanced_for_statement_header_init')
 
     def p_enhanced_for_statement_header_init2(self, p):
-        '''enhanced_for_statement_header_init : FOR '(' modifiers type NAME dims_opt'''
+        '''enhanced_for_statement_header_init : FOR seen_FOR '(' modifiers type NAME dims_opt'''
         self.gen(p, 'enhanced_for_statement_header_init')
 
     def p_statement_no_short_if(self, p):
