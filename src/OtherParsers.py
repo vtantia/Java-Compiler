@@ -417,8 +417,8 @@ class StatementParser(BaseParser):
             # else allocate on heap and store pointer
             lastTable[varName]['size'] = p[1]['count'] * 4
             if self.gst.get(p[0]['type']):
-                if self.gst[p[0]['type']]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = p[1]['count'] * self.gst[p[0]['type']]['size']
+                if self.gst[p[0]['type']][0]['desc'] == 'primitive_type':
+                    lastTable[varName]['size'] = p[1]['count'] * self.gst[p[0]['type']][0]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
@@ -1245,10 +1245,8 @@ class ClassParser(BaseParser):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
-        name = p[3] if p[4] == '(' else p[2]
-        # lastTable = self.symTabStack[-1]
-        # lastTable[name] = {'size': 0, 'desc': 'constructor'}
-        # self.symTabStack.append(lastTable[name])
+        print(p[0], p[1], p[2], p[3])
+        name = p[3] if len(p) == 5 else p[2]
         self.startNewScope(name, 'constructor')
         self.gen(p, 'constructor_header_name')
 
@@ -1296,7 +1294,6 @@ class ClassParser(BaseParser):
         '''method_declaration : abstract_method_declaration
                               | method_header method_body'''
         self.gen(p, 'method_declaration')
-        # self.symTabStack.pop()
         self.endCurrScope()
 
     def p_abstract_method_declaration(self, p):
@@ -1313,9 +1310,6 @@ class ClassParser(BaseParser):
         name = p[4]
         if (name == '('):
             name = p[3]
-        # lastTable = self.symTabStack[-1]
-        # lastTable[name] = {'size': 0, 'desc': 'method'}
-        # self.symTabStack.append(lastTable[name])
         self.startNewScope(name, 'method')
         self.gen(p, 'method_header_name')
 

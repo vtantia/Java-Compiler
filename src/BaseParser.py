@@ -3,7 +3,7 @@ import pydot
 
 class BaseParser(object):
     def __init__(self):
-        self.gst = {}
+        self.gst = defaultdict(lambda: [])
         type_size_tuples = [('boolean', 1),
                             ('void', 0),
                             ('byte', 1),
@@ -15,7 +15,7 @@ class BaseParser(object):
                             ('double', 8),
                             ('array_type', 4)]
         for datatype, size in type_size_tuples:
-            self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
+            self.gst[datatype].append({'size': size, 'desc': 'primitive_type'})
         self.gst['desc'] = 'GLOBAL TABLE'
 
         self.symTabStack = [self.gst]
@@ -32,7 +32,7 @@ class BaseParser(object):
         newTable = self.newTable(desc)
         currTable[name].append(newTable)
         self.symTabStack.append(newTable)
-        print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
+        # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
 
     def endCurrScope(self):
         # print('Removing a Table %d %s' % (len(self.symTabStack)-1, self.symTabStack[-1]['desc']))
@@ -78,8 +78,12 @@ class BaseParser(object):
 
     def recPrint(self, table, count):
         for key in table:
-            if isinstance(table[key], dict):
-                print('\t'*count + key)
-                self.recPrint(table[key], count+1)
+            if isinstance(table[key], list):
+                for elem in table[key]:
+                    if isinstance(elem, defaultdict):
+                        print('\t'*count + key)
+                        self.recPrint(elem, count+1)
+                    else:
+                        print('\t'*count + key + '\t'*2 + str(elem))
             else:
                 print('\t'*count + key + '\t'*2 + str(table[key]))
