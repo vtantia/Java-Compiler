@@ -37,13 +37,11 @@ if __name__=="__main__":
             out_file = argv[2]
             out_file = out_file.replace('tests/','graphs/')
             out_file = out_file.replace('.java','.png')
-            out_file_ast = out_file.replace('.png','_ast.png')
             dir = 'graphs'
             if not os.path.exists(dir):
                 os.makedirs(dir)
-            # parserObj.ptree.write_png(out_file)
-            parserObj.ast.write_png(out_file_ast)
-            print('Parse tree output in file \'{}\''.format(out_file))
+            parserObj.ast.write_png(out_file)
+            print('AST output in file \'{}\''.format(out_file))
 
     else:
         print('No such option \'{}\''.format(argv[1]))

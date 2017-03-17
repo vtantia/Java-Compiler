@@ -50,12 +50,6 @@ class ExpressionParser(BaseParser):
                                            | name '?' expression ':' conditional_expression'''
         self.gen(p, 'conditional_expression_not_name')
 
-    def binop(self, p, ctor):
-        if len(p) == 2:
-            p[0] = p[1]
-        else:
-            p[0] = ctor(p[2], p[1], p[3])
-
     def p_conditional_or_expression(self, p):
         '''conditional_or_expression : conditional_and_expression
                                      | conditional_or_expression OR conditional_and_expression'''
@@ -393,8 +387,7 @@ class StatementParser(BaseParser):
         self.gen(p, 'variable_declarator')
 
         # if first declaration then no comma else a comma exists
-        typeSource = p[-1] if p[-1] is not ',' else p[-2]
-        p[0]['type'] = typeSource['type']
+        p[0]['type'] = p[-1] if p[-1] is not ',' else p[-2]['type']
         # TODO deal with the initialization rule
 
         # using a prefix 'var_' for all variables in symbol table
@@ -426,7 +419,7 @@ class StatementParser(BaseParser):
         '''variable_declarator_id : NAME dims_opt'''
         self.gen(p, 'variable_declarator_id')
         p[0]['count'] = 1
-        p[0]['varName'] = p[1]['ptreeName']
+        p[0]['varName'] = p[1]['astName']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
@@ -915,7 +908,6 @@ class TypeParser(BaseParser):
         '''type : primitive_type
                 | reference_type'''
         self.gen(p, 'type')
-        p[0]['type'] = p[1]['type']
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -928,14 +920,12 @@ class TypeParser(BaseParser):
                           | FLOAT
                           | DOUBLE'''
         self.gen(p, 'primitive_type')
-        p[0]['type'] = p[1]['ptreeName']
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
                           | array_type'''
         self.gen(p, 'reference_type')
-        p[0]['type'] = p[1]['ptreeName']
-        # TODO construct p[0]['ptreeName'], Can't be simply done by p[1]['ptreeName']
+        # TODO construct p[0]['astName'], Can't be simply done by p[1]['astName']
 
     def p_class_or_interface_type(self, p):
         '''class_or_interface_type : class_or_interface

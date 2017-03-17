@@ -19,7 +19,6 @@ class BaseParser(object):
         self.gst['desc'] = 'GLOBAL TABLE'
 
         self.symTabStack = [self.gst]
-        self.ptree = pydot.Dot(graph_type='digraph', ordering='out')
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
 
@@ -55,11 +54,8 @@ class BaseParser(object):
     def gen(self, p, s):
         useful = [i for i, item in enumerate(p) if item is not None]
         if useful:
-            p[0] = {}
-            p[0]['ptreeName'] = s
-            p[0]['ptreeNode'] = self.createNode(s, self.ptree)
-
             if len(useful) != 1:
+                p[0] = {}
                 p[0]['astName'] = s
                 p[0]['astNode'] = self.createNode(s, self.ast)
 
@@ -67,16 +63,12 @@ class BaseParser(object):
                 if not isinstance(p[i], dict):
                     nodeName = p[i]
                     p[i] = {}
-                    p[i]['ptreeName'] = nodeName
                     p[i]['astName'] = nodeName
-                    p[i]['ptreeNode'] = self.createNode(nodeName, self.ptree)
                     p[i]['astNode'] = self.createNode(nodeName, self.ast)
-                self.ptree.add_edge(pydot.Edge(p[0]['ptreeNode'], p[i]['ptreeNode']))
                 if len(useful) != 1:
                     self.ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
             if len(useful) == 1:
-                p[0]['astName'] = p[1]['astName']
-                p[0]['astNode'] = p[1]['astNode']
+                p[0] = p[1]
 
     def recPrint(self, table, count):
         for key in table:
