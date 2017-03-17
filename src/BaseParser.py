@@ -1,10 +1,10 @@
-from __future__ import print_function
+from collections import defaultdict
 import pydot
 
 class BaseParser(object):
     def __init__(self):
         self.gst = {}
-        type_size_tuples = [('boolean',1),
+        type_size_tuples = [('boolean', 1),
                             ('void', 0),
                             ('byte', 1),
                             ('short', 2),
@@ -14,8 +14,8 @@ class BaseParser(object):
                             ('float', 4),
                             ('double', 8),
                             ('array_type', 4)]
-        for type, size in type_size_tuples:
-            self.gst[type] = {'size': size, 'desc': 'primitive_type'}
+        for datatype, size in type_size_tuples:
+            self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
 
         self.symTabStack = [self.gst]
@@ -23,21 +23,16 @@ class BaseParser(object):
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
 
+    def newTable(self, desc):
+        dict = {'size':0, 'desc':desc}
+        return defaultdict(lambda: [], dict)
+
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
-        currTable[name] = {'size'   : 0,    'desc'  : desc  }
-        self.symTabStack.append(currTable[name])
-        # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
-
-    def appendNewScope(self, desc):
-        currTable = self.symTabStack[-1]
-        if not currTable.get('blockList'):
-            currTable['blockList'] = []
-
-        newTable = {'size': 0,  'desc': desc    }
-        currTable['blockList'].append(newTable)
+        newTable = self.newTable(desc)
+        currTable[name].append(newTable)
         self.symTabStack.append(newTable)
-        # print('Adding new Table %d %s' % (len(self.symTabStack), newTable['desc']))
+        print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
 
     def endCurrScope(self):
         # print('Removing a Table %d %s' % (len(self.symTabStack)-1, self.symTabStack[-1]['desc']))

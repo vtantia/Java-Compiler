@@ -345,7 +345,7 @@ class StatementParser(BaseParser):
 
     def p_seen_Lbrace(self, p):
         '''seen_Lbrace : empty'''
-        self.appendNewScope('block')
+        self.startNewScope('blockList', 'block')
 
     def p_block_statements_opt(self, p):
         '''block_statements_opt : block_statements'''
@@ -546,7 +546,7 @@ class StatementParser(BaseParser):
 
     def p_seen_FOR(self, p):
         '''seen_FOR : empty'''
-        self.appendNewScope('FOR')
+        self.startNewScope('blockList', 'for')
 
     def p_for_statement(self, p):
         '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
@@ -1245,9 +1245,7 @@ class ClassParser(BaseParser):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
-        name = p[3]
-        if (name == '('):
-            name = p[2]
+        name = p[3] if p[4] == '(' else p[2]
         # lastTable = self.symTabStack[-1]
         # lastTable[name] = {'size': 0, 'desc': 'constructor'}
         # self.symTabStack.append(lastTable[name])
