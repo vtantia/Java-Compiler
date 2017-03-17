@@ -30,4 +30,4 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 
     def p_empty(self, p):
         '''empty :'''
-        self.gen(p, 'empty')
+        # self.gen(p, 'empty')

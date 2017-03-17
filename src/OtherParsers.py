@@ -393,10 +393,7 @@ class StatementParser(BaseParser):
         self.gen(p, 'variable_declarator')
 
         # if first declaration then no comma else a comma exists
-        typeSource = p[-1]
-        if p[-1] == ',':
-            typeSource = p[-2]
-
+        typeSource = p[-1] if p[-1] is not ',' else p[-2]
         p[0]['type'] = typeSource['type']
         # TODO deal with the initialization rule
 
@@ -937,7 +934,7 @@ class TypeParser(BaseParser):
         '''reference_type : class_or_interface_type
                           | array_type'''
         self.gen(p, 'reference_type')
-        p[0]['type'] = p[1]['astName']
+        p[0]['type'] = p[1]['ptreeName']
         # TODO construct p[0]['ptreeName'], Can't be simply done by p[1]['ptreeName']
 
     def p_class_or_interface_type(self, p):

@@ -53,28 +53,30 @@ class BaseParser(object):
         return p
 
     def gen(self, p, s):
-        p[0] = {}
-        p[0]['ptreeName'] = s
-        p[0]['ptreeNode'] = self.createNode(s, self.ptree)
-        if len(p) != 2:
-            p[0]['astName'] = s
-            p[0]['astNode'] = self.createNode(s, self.ast)
+        useful = [i for i, item in enumerate(p) if item is not None]
+        if useful:
+            p[0] = {}
+            p[0]['ptreeName'] = s
+            p[0]['ptreeNode'] = self.createNode(s, self.ptree)
 
-        for i in range(1, len(p)):
-            if not isinstance(p[i], dict):
-                nodeName = p[i]
-                p[i] = {}
-                p[i]['ptreeName'] = nodeName
-                p[i]['astName'] = nodeName
-                p[i]['ptreeNode'] = self.createNode(nodeName, self.ptree)
-                p[i]['astNode'] = self.createNode(nodeName, self.ast)
-            self.ptree.add_edge(pydot.Edge(p[0]['ptreeNode'], p[i]['ptreeNode']))
-            if len(p) != 2:
-                self.ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
-        if len(p) == 2:
-            p[0]['astName'] = p[1]['astName']
-            p[0]['astNode'] = p[1]['astNode']
+            if len(useful) != 1:
+                p[0]['astName'] = s
+                p[0]['astNode'] = self.createNode(s, self.ast)
 
+            for i in useful:
+                if not isinstance(p[i], dict):
+                    nodeName = p[i]
+                    p[i] = {}
+                    p[i]['ptreeName'] = nodeName
+                    p[i]['astName'] = nodeName
+                    p[i]['ptreeNode'] = self.createNode(nodeName, self.ptree)
+                    p[i]['astNode'] = self.createNode(nodeName, self.ast)
+                self.ptree.add_edge(pydot.Edge(p[0]['ptreeNode'], p[i]['ptreeNode']))
+                if len(useful) != 1:
+                    self.ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
+            if len(useful) == 1:
+                p[0]['astName'] = p[1]['astName']
+                p[0]['astNode'] = p[1]['astNode']
 
     def recPrint(self, table, count):
         for key in table:

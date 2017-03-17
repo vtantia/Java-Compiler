@@ -41,7 +41,7 @@ if __name__=="__main__":
             dir = 'graphs'
             if not os.path.exists(dir):
                 os.makedirs(dir)
-            parserObj.ptree.write_png(out_file)
+            # parserObj.ptree.write_png(out_file)
             parserObj.ast.write_png(out_file_ast)
             print('Parse tree output in file \'{}\''.format(out_file))
 
