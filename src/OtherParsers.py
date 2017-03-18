@@ -339,7 +339,7 @@ class StatementParser(BaseParser):
 
     def p_seen_Lbrace(self, p):
         '''seen_Lbrace : empty'''
-        self.startNewScope('blockList', 'block')
+        self.appendNewScope('block')
 
     def p_block_statements_opt(self, p):
         '''block_statements_opt : block_statements'''
@@ -387,7 +387,7 @@ class StatementParser(BaseParser):
         self.gen(p, 'variable_declarator')
 
         # if first declaration then no comma else a comma exists
-        p[0]['type'] = p[-1] if p[-1] is not ',' else p[-2]['type']
+        p[0]['type'] = p[-1]['astName'] if p[-1] is not ',' else p[-2]['type']
         # TODO deal with the initialization rule
 
         # using a prefix 'var_' for all variables in symbol table
@@ -407,8 +407,8 @@ class StatementParser(BaseParser):
             # else allocate on heap and store pointer
             lastTable[varName]['size'] = p[1]['count'] * 4
             if self.gst.get(p[0]['type']):
-                if self.gst[p[0]['type']][0]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = p[1]['count'] * self.gst[p[0]['type']][0]['size']
+                if self.gst[p[0]['type']]['desc'] == 'primitive_type':
+                    lastTable[varName]['size'] = p[1]['count'] * self.gst[p[0]['type']]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
@@ -536,12 +536,10 @@ class StatementParser(BaseParser):
 
     def p_seen_FOR(self, p):
         '''seen_FOR : empty'''
-        self.startNewScope('blockList', 'for')
+        self.appendNewScope('for')
 
     def p_for_statement(self, p):
         '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
-        # TODO add the initialized variable to the scope of new block
-        # or remove it after this rule
         self.gen(p, 'for_statement')
         self.endCurrScope()
 
@@ -1232,7 +1230,6 @@ class ClassParser(BaseParser):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
-        print(p[0], p[1], p[2], p[3])
         name = p[3] if len(p) == 5 else p[2]
         self.startNewScope(name, 'constructor')
         self.gen(p, 'constructor_header_name')
@@ -1294,9 +1291,7 @@ class ClassParser(BaseParser):
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type_parameters type NAME '('
                               | modifiers_opt type NAME '(' '''
-        name = p[4]
-        if (name == '('):
-            name = p[3]
+        name = p[3] if p[4] == '(' else p[4]
         self.startNewScope(name, 'method')
         self.gen(p, 'method_header_name')
 

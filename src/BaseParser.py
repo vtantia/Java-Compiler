@@ -1,9 +1,8 @@
-from collections import defaultdict
 import pydot
 
 class BaseParser(object):
     def __init__(self):
-        self.gst = defaultdict(lambda: [])
+        self.gst = {}
         type_size_tuples = [('boolean', 1),
                             ('void', 0),
                             ('byte', 1),
@@ -15,23 +14,27 @@ class BaseParser(object):
                             ('double', 8),
                             ('array_type', 4)]
         for datatype, size in type_size_tuples:
-            self.gst[datatype].append({'size': size, 'desc': 'primitive_type'})
+            self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
 
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
 
-    def newTable(self, desc):
-        dict = {'size':0, 'desc':desc}
-        return defaultdict(lambda: [], dict)
-
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
-        newTable = self.newTable(desc)
-        currTable[name].append(newTable)
-        self.symTabStack.append(newTable)
+        currTable[name] = {'size': 0, 'desc': desc}
+        self.symTabStack.append(currTable[name])
         # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
+
+    def appendNewScope(self, desc):
+        currTable = self.symTabStack[-1]
+        if not currTable.get('blockList'):
+            currTable['blockList'] = []
+
+        newTable = {'size': 0, 'desc': desc}
+        currTable['blockList'].append(newTable)
+        self.symTabStack.append(newTable)
 
     def endCurrScope(self):
         # print('Removing a Table %d %s' % (len(self.symTabStack)-1, self.symTabStack[-1]['desc']))
@@ -72,9 +75,12 @@ class BaseParser(object):
 
     def recPrint(self, table, count):
         for key in table:
-            if isinstance(table[key], list):
+            if isinstance(table[key], dict):
+                print('\t'*count + key)
+                self.recPrint(table[key],  count+1)
+            elif isinstance(table[key], list):
                 for elem in table[key]:
-                    if isinstance(elem, defaultdict):
+                    if isinstance(elem, dict):
                         print('\t'*count + key)
                         self.recPrint(elem, count+1)
                     else:
