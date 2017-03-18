@@ -54,23 +54,27 @@ class BaseParser(object):
         graph.add_node(p)
         return p
 
-    def gen(self, p, s):
-        useful = [i for i, item in enumerate(p) if item is not None]
+    def gen(self, p, name, index_ast = None):
+        useful_wo_index = [i for i, item in enumerate(p) if item and i != index_ast]
+        useful = useful_wo_index + [index_ast] if index_ast else useful_wo_index
         if useful:
-            if len(useful) != 1:
-                p[0] = {}
-                p[0]['astName'] = s
-                p[0]['astNode'] = self.createNode(s, self.ast)
-
             for i in useful:
                 if not isinstance(p[i], dict):
                     nodeName = p[i]
                     p[i] = {}
                     p[i]['astName'] = nodeName
                     p[i]['astNode'] = self.createNode(nodeName, self.ast)
-                if len(useful) != 1:
+
+            if len(useful_wo_index) != 1:
+                if index_ast:
+                    p[0] = p[index_ast]
+                else:
+                    p[0] = {}
+                    p[0]['astName'] = name
+                    p[0]['astNode'] = self.createNode(name, self.ast)
+                for i in useful_wo_index:
                     self.ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
-            if len(useful) == 1:
+            else:
                 p[0] = p[1]
 
     def recPrint(self, table, count):
@@ -87,3 +91,9 @@ class BaseParser(object):
                         print('\t'*count + key + '\t'*2 + str(elem))
             else:
                 print('\t'*count + key + '\t'*2 + str(table[key]))
+
+    def binary(self, p):
+        return 2 if len(p) == 4 else None
+
+    def unary(self, p):
+        return 1 if len(p) == 3 else None

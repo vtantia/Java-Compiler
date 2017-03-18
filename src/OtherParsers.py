@@ -22,7 +22,7 @@ class ExpressionParser(BaseParser):
 
     def p_assignment(self, p):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
-        self.gen(p, 'assignment')
+        self.gen(p, 'assignment', self.binary(p))
 
     def p_assignment_operator(self, p):
         '''assignment_operator : '='
@@ -53,63 +53,63 @@ class ExpressionParser(BaseParser):
     def p_conditional_or_expression(self, p):
         '''conditional_or_expression : conditional_and_expression
                                      | conditional_or_expression OR conditional_and_expression'''
-        self.gen(p, 'conditional_or_expression')
+        self.gen(p, 'conditional_or_expression', self.binary(p))
 
     def p_conditional_or_expression_not_name(self, p):
         '''conditional_or_expression_not_name : conditional_and_expression_not_name
                                               | conditional_or_expression_not_name OR conditional_and_expression
                                               | name OR conditional_and_expression'''
-        self.gen(p, 'conditional_or_expression_not_name')
+        self.gen(p, 'conditional_or_expression_not_name', self.binary(p))
 
     def p_conditional_and_expression(self, p):
         '''conditional_and_expression : inclusive_or_expression
                                       | conditional_and_expression AND inclusive_or_expression'''
-        self.gen(p, 'conditional_and_expression')
+        self.gen(p, 'conditional_and_expression', self.binary(p))
 
     def p_conditional_and_expression_not_name(self, p):
         '''conditional_and_expression_not_name : inclusive_or_expression_not_name
                                                | conditional_and_expression_not_name AND inclusive_or_expression
                                                | name AND inclusive_or_expression'''
-        self.gen(p, 'conditional_and_expression_not_name')
+        self.gen(p, 'conditional_and_expression_not_name', self.binary(p))
 
     def p_inclusive_or_expression(self, p):
         '''inclusive_or_expression : exclusive_or_expression
                                    | inclusive_or_expression '|' exclusive_or_expression'''
-        self.gen(p, 'inclusive_or_expression')
+        self.gen(p, 'inclusive_or_expression', self.binary(p))
 
     def p_inclusive_or_expression_not_name(self, p):
         '''inclusive_or_expression_not_name : exclusive_or_expression_not_name
                                             | inclusive_or_expression_not_name '|' exclusive_or_expression
                                             | name '|' exclusive_or_expression'''
-        self.gen(p, 'inclusive_or_expression_not_name')
+        self.gen(p, 'inclusive_or_expression_not_name', self.binary(p))
 
     def p_exclusive_or_expression(self, p):
         '''exclusive_or_expression : and_expression
                                    | exclusive_or_expression '^' and_expression'''
-        self.gen(p, 'exclusive_or_expression')
+        self.gen(p, 'exclusive_or_expression', self.binary(p))
 
     def p_exclusive_or_expression_not_name(self, p):
         '''exclusive_or_expression_not_name : and_expression_not_name
                                             | exclusive_or_expression_not_name '^' and_expression
                                             | name '^' and_expression'''
-        self.gen(p, 'exclusive_or_expression_not_name')
+        self.gen(p, 'exclusive_or_expression_not_name', self.binary(p))
 
     def p_and_expression(self, p):
         '''and_expression : equality_expression
                           | and_expression '&' equality_expression'''
-        self.gen(p, 'and_expression')
+        self.gen(p, 'and_expression', self.binary(p))
 
     def p_and_expression_not_name(self, p):
         '''and_expression_not_name : equality_expression_not_name
                                    | and_expression_not_name '&' equality_expression
                                    | name '&' equality_expression'''
-        self.gen(p, 'and_expression_not_name')
+        self.gen(p, 'and_expression_not_name', self.binary(p))
 
     def p_equality_expression(self, p):
         '''equality_expression : instanceof_expression
                                | equality_expression EQ instanceof_expression
                                | equality_expression NEQ instanceof_expression'''
-        self.gen(p, 'equality_expression')
+        self.gen(p, 'equality_expression', self.binary(p))
 
     def p_equality_expression_not_name(self, p):
         '''equality_expression_not_name : instanceof_expression_not_name
@@ -117,18 +117,18 @@ class ExpressionParser(BaseParser):
                                         | name EQ instanceof_expression
                                         | equality_expression_not_name NEQ instanceof_expression
                                         | name NEQ instanceof_expression'''
-        self.gen(p, 'equality_expression_not_name')
+        self.gen(p, 'equality_expression_not_name', self.binary(p))
 
     def p_instanceof_expression(self, p):
         '''instanceof_expression : relational_expression
                                  | instanceof_expression INSTANCEOF reference_type'''
-        self.gen(p, 'instanceof_expression')
+        self.gen(p, 'instanceof_expression', self.binary(p))
 
     def p_instanceof_expression_not_name(self, p):
         '''instanceof_expression_not_name : relational_expression_not_name
                                           | name INSTANCEOF reference_type
                                           | instanceof_expression_not_name INSTANCEOF reference_type'''
-        self.gen(p, 'instanceof_expression_not_name')
+        self.gen(p, 'instanceof_expression_not_name', self.binary(p))
 
     def p_relational_expression(self, p):
         '''relational_expression : shift_expression
@@ -136,7 +136,7 @@ class ExpressionParser(BaseParser):
                                  | relational_expression '<' shift_expression
                                  | relational_expression GTEQ shift_expression
                                  | relational_expression LTEQ shift_expression'''
-        self.gen(p, 'relational_expression')
+        self.gen(p, 'relational_expression', self.binary(p))
 
     def p_relational_expression_not_name(self, p):
         '''relational_expression_not_name : shift_expression_not_name
@@ -148,14 +148,14 @@ class ExpressionParser(BaseParser):
                                           | name GTEQ shift_expression
                                           | shift_expression_not_name LTEQ shift_expression
                                           | name LTEQ shift_expression'''
-        self.gen(p, 'relational_expression_not_name')
+        self.gen(p, 'relational_expression_not_name', self.binary(p))
 
     def p_shift_expression(self, p):
         '''shift_expression : additive_expression
                             | shift_expression LSHIFT additive_expression
                             | shift_expression RSHIFT additive_expression
                             | shift_expression RRSHIFT additive_expression'''
-        self.gen(p, 'shift_expression')
+        self.gen(p, 'shift_expression', self.binary(p))
 
     def p_shift_expression_not_name(self, p):
         '''shift_expression_not_name : additive_expression_not_name
@@ -165,13 +165,13 @@ class ExpressionParser(BaseParser):
                                      | name RSHIFT additive_expression
                                      | shift_expression_not_name RRSHIFT additive_expression
                                      | name RRSHIFT additive_expression'''
-        self.gen(p, 'shift_expression_not_name')
+        self.gen(p, 'shift_expression_not_name', self.binary(p))
 
     def p_additive_expression(self, p):
         '''additive_expression : multiplicative_expression
                                | additive_expression '+' multiplicative_expression
                                | additive_expression '-' multiplicative_expression'''
-        self.gen(p, 'additive_expression')
+        self.gen(p, 'additive_expression', self.binary(p))
 
     def p_additive_expression_not_name(self, p):
         '''additive_expression_not_name : multiplicative_expression_not_name
@@ -179,14 +179,14 @@ class ExpressionParser(BaseParser):
                                         | name '+' multiplicative_expression
                                         | additive_expression_not_name '-' multiplicative_expression
                                         | name '-' multiplicative_expression'''
-        self.gen(p, 'additive_expression_not_name')
+        self.gen(p, 'additive_expression_not_name', self.binary(p))
 
     def p_multiplicative_expression(self, p):
         '''multiplicative_expression : unary_expression
                                      | multiplicative_expression '*' unary_expression
                                      | multiplicative_expression '/' unary_expression
                                      | multiplicative_expression '%' unary_expression'''
-        self.gen(p, 'multiplicative_expression')
+        self.gen(p, 'multiplicative_expression', self.binary(p))
 
     def p_multiplicative_expression_not_name(self, p):
         '''multiplicative_expression_not_name : unary_expression_not_name
@@ -196,7 +196,7 @@ class ExpressionParser(BaseParser):
                                               | name '/' unary_expression
                                               | multiplicative_expression_not_name '%' unary_expression
                                               | name '%' unary_expression'''
-        self.gen(p, 'multiplicative_expression_not_name')
+        self.gen(p, 'multiplicative_expression_not_name', self.binary(p))
 
     def p_unary_expression(self, p):
         '''unary_expression : pre_increment_expression
@@ -204,7 +204,7 @@ class ExpressionParser(BaseParser):
                             | '+' unary_expression
                             | '-' unary_expression
                             | unary_expression_not_plus_minus'''
-        self.gen(p, 'unary_expression')
+        self.gen(p, 'unary_expression', self.unary(p))
 
     def p_unary_expression_not_name(self, p):
         '''unary_expression_not_name : pre_increment_expression
@@ -212,29 +212,29 @@ class ExpressionParser(BaseParser):
                                      | '+' unary_expression
                                      | '-' unary_expression
                                      | unary_expression_not_plus_minus_not_name'''
-        self.gen(p, 'unary_expression_not_name')
+        self.gen(p, 'unary_expression_not_name', self.unary(p))
 
     def p_pre_increment_expression(self, p):
         '''pre_increment_expression : PLUSPLUS unary_expression'''
-        self.gen(p, 'pre_increment_expression')
+        self.gen(p, 'pre_increment_expression', self.unary(p))
 
     def p_pre_decrement_expression(self, p):
         '''pre_decrement_expression : MINUSMINUS unary_expression'''
-        self.gen(p, 'pre_decrement_expression')
+        self.gen(p, 'pre_decrement_expression', self.unary(p))
 
     def p_unary_expression_not_plus_minus(self, p):
         '''unary_expression_not_plus_minus : postfix_expression
                                            | '~' unary_expression
                                            | '!' unary_expression
                                            | cast_expression'''
-        self.gen(p, 'unary_expression_not_plus_minus')
+        self.gen(p, 'unary_expression_not_plus_minus', self.unary(p))
 
     def p_unary_expression_not_plus_minus_not_name(self, p):
         '''unary_expression_not_plus_minus_not_name : postfix_expression_not_name
                                                     | '~' unary_expression
                                                     | '!' unary_expression
                                                     | cast_expression'''
-        self.gen(p, 'unary_expression_not_plus_minus_not_name')
+        self.gen(p, 'unary_expression_not_plus_minus_not_name', self.unary(p))
 
     def p_postfix_expression(self, p):
         '''postfix_expression : primary
@@ -251,11 +251,11 @@ class ExpressionParser(BaseParser):
 
     def p_post_increment_expression(self, p):
         '''post_increment_expression : postfix_expression PLUSPLUS'''
-        self.gen(p, 'post_increment_expression')
+        self.gen(p, 'post_increment_expression', 2)
 
     def p_post_decrement_expression(self, p):
         '''post_decrement_expression : postfix_expression MINUSMINUS'''
-        self.gen(p, 'post_decrement_expression')
+        self.gen(p, 'post_decrement_expression', 2)
 
     def p_primary(self, p):
         '''primary : primary_no_new_array
@@ -384,7 +384,7 @@ class StatementParser(BaseParser):
     def p_variable_declarator(self, p):
         '''variable_declarator : variable_declarator_id
                                | variable_declarator_id '=' variable_initializer'''
-        self.gen(p, 'variable_declarator')
+        self.gen(p, 'variable_declarator', self.binary(p))
 
         # if first declaration then no comma else a comma exists
         p[0]['type'] = p[-1]['astName'] if p[-1] is not ',' else p[-2]['type']
