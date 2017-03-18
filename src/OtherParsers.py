@@ -1226,12 +1226,16 @@ class ClassParser(BaseParser):
     def p_constructor_header(self, p):
         '''constructor_header : constructor_header_name formal_parameter_list_opt ')' method_header_throws_clause_opt'''
         self.gen(p, 'constructor_header')
+        currScope = self.symTabStack[-1]
+        currScope['size'] = 0
 
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt type_parameters NAME '('
                                    | modifiers_opt NAME '(' '''
         name = p[3] if len(p) == 5 else p[2]
         self.startNewScope(name, 'constructor')
+        currScope = self.symTabStack[-1]
+        currScope['size'] = -8
         self.gen(p, 'constructor_header_name')
 
     def p_formal_parameter_list_opt(self, p):
@@ -1250,7 +1254,41 @@ class ClassParser(BaseParser):
     def p_formal_parameter(self, p):
         '''formal_parameter : modifiers_opt type variable_declarator_id
                             | modifiers_opt type ELLIPSIS variable_declarator_id'''
+
         self.gen(p, 'formal_parameter')
+        # TODO Deal with Ellipsis
+
+        currScope = self.symTabStack[-1]
+        if not currScope.get('parList'):
+            currScope['parList'] = {}
+
+        # using a prefix 'var_' for all variables in symbol table
+        vdid = p[3] if len(p) == 4 else p[4]
+        varName = 'var_' + vdid['varName']
+
+        # Check if already declared
+        # If declared, then print an error and continue, else add to symbol table
+        if currScope.get(varName):
+            print('Function Parameter \'{}\' at line #{} already defined in the same parameter list'.format(vdid['varName'], self.lexer.lineno))
+        else:
+            currScope[varName] = {}
+            currScope[varName]['type'] = p[2]['astName']
+            currScope[varName]['lineNo'] = self.lexer.lineno
+
+            # Alloting at-least 4 bytes to all variables passed to this function
+            # TODO fix this.
+            currScope[varName]['size'] = 4
+            if self.gst.get(p[2]['astName']):
+                if self.gst[p[2]['astName']]['desc'] == 'primitive_type':
+                    currScope[varName]['size'] = max(4, self.gst[p[2]['astName']]['size'])
+
+            # set offset for new variable(s) and update the offset value in symbol table
+            # Negative offset, as according to function stack
+            currScope[varName]['offset'] = currScope['size']
+            currScope['size'] = currScope[varName]['offset'] - currScope[varName]['size']
+
+            # append in Parameter List
+            currScope['parList'][varName] = currScope[varName]
 
     def p_method_header_throws_clause_opt(self, p):
         '''method_header_throws_clause_opt : method_header_throws_clause
@@ -1287,12 +1325,16 @@ class ClassParser(BaseParser):
     def p_method_header(self, p):
         '''method_header : method_header_name formal_parameter_list_opt ')' method_header_extended_dims method_header_throws_clause_opt'''
         self.gen(p, 'method_header')
+        currScope = self.symTabStack[-1]
+        currScope['size'] = 0
 
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type_parameters type NAME '('
                               | modifiers_opt type NAME '(' '''
         name = p[3] if p[4] == '(' else p[4]
         self.startNewScope(name, 'method')
+        currScope = self.symTabStack[-1]
+        currScope['size'] = -8
         self.gen(p, 'method_header_name')
 
     def p_method_header_extended_dims(self, p):
