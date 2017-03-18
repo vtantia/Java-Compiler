@@ -1,4 +1,5 @@
 from BaseParser import BaseParser
+import re
 
 class ExpressionParser(BaseParser):
 
@@ -863,14 +864,47 @@ class NameParser(BaseParser):
 
 class LiteralParser(BaseParser):
 
+    def find_type(self, num):
+        float_start = r'^[0-9]*\.[0-9]+'
+        if re.search(float_start + r'(d|D)?$', num):
+            return 'double'
+        if re.search(float_start + r'(f|F)$', num):
+            return 'float'
+
+        int_start = r'^((0x[0-9a-fA-F]+)|(0[0-7]+)|(0|([1-9][0-9]*)))'
+        if re.search(int_start + r'(l|L)$', num):
+            return 'long'
+        if re.search(int_start + r'$', num):
+            return 'integer'
+        return 'error'
+
     def p_literal(self, p):
-        '''literal : NUM
-                   | CHAR_LITERAL
-                   | STRING_LITERAL
-                   | TRUE
-                   | FALSE
-                   | NULL'''
+        '''literal : NUM'''
         self.gen(p, 'literal')
+        p[0]['type'] = self.find_type(p[0]['astName'])
+        if p[0]['type'] == 'error':
+            print('Not a matching type at line #{}'.format(self.lexer.lineno))
+
+    def p_literal1(self, p):
+        '''literal : CHAR_LITERAL'''
+        self.gen(p, 'literal')
+        p[0]['type'] = 'char'
+
+    def p_literal2(self, p):
+        '''literal : STRING_LITERAL'''
+        self.gen(p, 'literal')
+        p[0]['type'] = 'String'
+
+    def p_literal3(self, p):
+        '''literal : TRUE
+                   | FALSE'''
+        self.gen(p, 'literal')
+        p[0]['type'] = 'boolean'
+
+    def p_literal4(self, p):
+        '''literal : NULL'''
+        self.gen(p, 'literal')
+        p[0]['type'] = 'null'
 
 class TypeParser(BaseParser):
 
