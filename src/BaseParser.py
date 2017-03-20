@@ -12,7 +12,7 @@ class BaseParser(object):
                             ('char', 1),
                             ('float', 4),
                             ('double', 8),
-                            ('array_type', 4)]
+                            ('array_type', 4)] # TODO fix size of array_type
         for datatype, size in type_size_tuples:
             self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
@@ -20,6 +20,17 @@ class BaseParser(object):
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
+
+        self.intsWoLong = ['byte', 'short', 'int', 'integer']
+        self.ints = self.intsWoLong + ['long']
+
+        self.decimals = ['float', 'double']
+
+        self.intsCharWoLong = self.intsWoLong + ['char']
+        self.intsChar = self.ints + ['char']
+
+        self.numsChar = self.intsChar + self.decimals
+        self.bitwise = self.intsChar + ['boolean']
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
