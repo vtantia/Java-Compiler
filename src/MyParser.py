@@ -23,7 +23,7 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 
     def p_error(self, p):
         print('Error: \'{}\' at line no: {}'.format(p.value, p.lineno))
-        with open(argv[2],'r') as fp:
+        with open(self.currFile, 'r') as fp:
             for i, line in enumerate(fp):
                 if i+1 == p.lineno:
                     print(line)

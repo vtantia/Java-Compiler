@@ -20,6 +20,7 @@ class BaseParser(object):
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
+        self.currFile = ''
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
