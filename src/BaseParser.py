@@ -98,3 +98,58 @@ class BaseParser(object):
 
     def unary(self, p):
         return 1 if len(p) == 3 else None
+
+    def splitType(self, typeList):
+        if isinstance(typeList, list):
+            for i in range(0, len(typeList)):
+                if type(typeList[i]) == int:
+                    return typeList[:i], typeList[i:]
+        return typeList, []
+
+    def resolveType(self, varType, varName):
+        if varType['type'] == 'reference':
+            datatype, dim = self.splitType(varType['reference'])
+        else:
+            datatype = [varType['type']]
+            dim = None
+
+        if dim and varName.get('dim'):
+            print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
+        else:
+            dim = varName.get('dim')
+
+        # return in the format basetype(primitive or reference), referred type(if base is not primitive), dimensions
+        if not dim:
+            return varType['type'], varType.get('reference')
+        else:
+            return 'reference', datatype + dim
+
+    def checkTypeAssignment(self, LHS, RHS, name):
+        if LHS['type'] != RHS['type']:
+            if not self.convertible(RHS['type'], LHS['type']):
+                print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+                print(LHS['type'], RHS['type'])
+                return 0
+            else:
+                RHS['type'] = LHS['type']
+        else:
+            if (LHS['type'] == 'reference') and (RHS['type'] == 'reference'):
+                datatypeL, dimL = self.splitType(LHS['reference'])
+                datatypeR, dimR = self.splitType(RHS['reference'])
+                # Assuming arrays of primitive_type are not convertible even if unit variables are
+                if datatypeL != datatypeR and datatypeR != [0]:
+                    print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+                    return 0
+                else:
+                    datatypeR = datatypeL
+                if len(dimL) != len(dimR):
+                    print('Dimensions do not match accross the assignment operator for \'{}\' at line #{}'.format(name, self.lexer.lineno))
+                    return 0
+        return 1
+
+    def convertible(self, type1, type2):
+        if type1 == 'reference' or type2 == 'reference' :
+            return 0
+        else:
+            # TODO
+            return 1

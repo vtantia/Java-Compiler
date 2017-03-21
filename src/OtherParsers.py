@@ -389,16 +389,7 @@ class StatementParser(BaseParser):
 
         # Only one among the typeSource and variable_declarator_id should
         # have dimension information
-        if p[0]['type'] == 'reference':
-            p[0]['reference'] = typeSource['reference']
-            if type(p[0]['reference'][-1]) is int and p[1].get('dim'):
-                print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
-                return
-
-        if p[1].get('dim'):
-            if not p[0].get('reference'):
-                p[0]['reference'] = [p[0]['type']]
-            p[0]['reference'] += p[1].get('dim') * [0]
+        p[0]['type'], p[0]['reference'] = self.resolveType(typeSource, p[1])
 
         # using a prefix 'var_' for all variables in symbol table
         lastTable = self.symTabStack[-1]
@@ -425,25 +416,12 @@ class StatementParser(BaseParser):
             lastTable['size'] = lastTable[varName]['offset']
 
             if len(p) == 4:
-                if not isinstance(p[3]['type'], list):
-                    p[3]['type'] = [p[3]['type']]
-                if p[3]['type'] == 0:
-                    p[3]['type'] = p[0]['type'] if p[0]['type'] != 'reference' else p[0]['reference'][0]
+                if self.checkTypeAssignment(p[0], p[3], varName):
+                    # reverse the dimensions
+                    reference, dim = self.splitType(p[3]['reference'])
+                    p[0]['reference'] = reference + dim[::-1]
 
-                p[3]['type'] = [p[3]['type'][0]] + p[3]['type'][len(p[3]['type'])-1:0:-1]
-                if not p[0]['type'] == 'reference':
-                    if not p[0]['type'] == p[3]['type'][0]:
-                        print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(varName, self.lexer.lineno))
-                else:
-                    if not (p[3]['type'][0] == 0 or p[3]['type'][0] == p[0]['reference'][0]):
-                        print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(varName, self.lexer.lineno))
-                    elif len(p[3]['type']) != len(p[0]['reference']):
-                        print('Dimensions do not match accross the assignment operator for \'{}\' at line #{} # TODO'.format(varName, self.lexer.lineno))
-                    else:
-                        p[0]['reference'] = [p[0]['reference'][0]] + p[3]['type'][1:]
-
-            if p[0]['type'] == 'reference':
-                lastTable[varName]['reference'] = p[0]['reference']
+            lastTable[varName]['reference'] = p[0]['reference']
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
@@ -510,25 +488,30 @@ class StatementParser(BaseParser):
         '''array_initializer : '{' comma_opt '}' '''
         self.gen(p, 'array_initializer')
         # unknown data type and zero length of array
-        p[0]['type'] = [0, 0]
+        p[0]['type'] = 'reference'
+        p[0]['reference'] = [0, 0]
 
     def p_array_initializer2(self, p):
         '''array_initializer : '{' variable_initializers '}'
                              | '{' variable_initializers ',' '}' '''
         self.gen(p, 'array_initializer')
         p[0]['type'] = p[2]['type']
+        p[0]['reference'] = p[2]['reference']
 
     def p_variable_initializers(self, p):
         '''variable_initializers : variable_initializer
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
         if len(p) == 2:
-            p[0]['type'].append(1)
+            if not p[0].get('reference'):
+                p[0]['reference'] = [p[0]['type']]
+                p[0]['type'] = 'reference'
+            p[0]['reference'].append(1)
         else:
             # the following condition also ensures that the data type is same
-            if p[1]['type'][0:-1] == p[3]['type']:
-                p[0]['type'] = p[1]['type']
-                p[0]['type'][-1] += 1
+            if p[1]['reference'][0:-1] == p[3]['reference']:
+                p[0]['reference'] = p[1]['reference']
+                p[0]['reference'][-1] += 1
             else:
                 print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
 
@@ -1155,13 +1138,15 @@ class ClassParser(BaseParser):
         vdid = p[3] if len(p) == 4 else p[4]
         varName = 'var_' + vdid['varName']
 
+        p[0]['type'], p[0]['reference'] = self.resolveType(p[2], vdid)
+
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
         if currScope.get(varName):
             print('Function Parameter \'{}\' at line #{} already defined in the same parameter list'.format(vdid['varName'], self.lexer.lineno))
         else:
             currScope[varName] = {}
-            currScope[varName]['type'] = p[2]['astName']
+            currScope[varName]['type'] = p[0]['type']
             currScope[varName]['lineNo'] = self.lexer.lineno
 
             # Alloting at-least 4 bytes to all variables passed to this function
@@ -1175,6 +1160,8 @@ class ClassParser(BaseParser):
             # Negative offset, as according to function stack
             currScope[varName]['offset'] = currScope['size']
             currScope['size'] = currScope[varName]['offset'] - currScope[varName]['size']
+
+            currScope[varName]['reference'] = p[0]['reference']
 
             # append in Parameter List
             currScope['parList'][varName] = currScope[varName]
