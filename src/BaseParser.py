@@ -20,6 +20,7 @@ class BaseParser(object):
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
+        self.currFile = ''
 
         self.intsWoLong = ['byte', 'short', 'int', 'integer']
         self.ints = self.intsWoLong + ['long']

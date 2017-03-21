@@ -39,6 +39,7 @@ class Parser(object):
         return self.parser.parse(prefix + code, lexer=self.lexer, debug=debug)
 
     def parse_file(self, _file, debug=0):
+        self.parserObj.currFile = _file
         content = self.read_file(_file)
         parse_ret = self.parse_string(content, debug=debug)
         return parse_ret

@@ -326,7 +326,7 @@ class ExpressionParser(BaseParser):
                 p[0]['type'] = p[1]['type']
             else
                 print('Not a matching type for ~ at line #{}'.format(self.lexer.lineno))
-                
+
         if p[0]['astName'] == '!':
             if p[1]['type'] == 'boolean':
                 p[0]['type'] == 'boolean'
@@ -426,28 +426,24 @@ class ExpressionParser(BaseParser):
         '''dims_loop : one_dim_loop
                      | dims_loop one_dim_loop'''
         self.gen(p, 'dims_loop')
+        p[0]['dim'] = p[1]['dim']
+        if len(p) == 3:
+            p[0]['dim'] += p[2]['dim']
 
     def p_one_dim_loop(self, p):
         '''one_dim_loop : '[' ']' '''
         self.gen(p, 'one_dim_loop')
+        p[0]['dim'] = [0]
 
     def p_cast_expression(self, p):
         '''cast_expression : '(' primitive_type dims_opt ')' unary_expression'''
         self.gen(p, 'cast_expression')
 
     def p_cast_expression2(self, p):
-        '''cast_expression : '(' name type_arguments dims_opt ')' unary_expression_not_plus_minus'''
-        self.gen(p, 'cast_expression')
-
-    def p_cast_expression3(self, p):
-        '''cast_expression : '(' name type_arguments '.' class_or_interface_type dims_opt ')' unary_expression_not_plus_minus'''
-        self.gen(p, 'cast_expression')
-
-    def p_cast_expression4(self, p):
         '''cast_expression : '(' name ')' unary_expression_not_plus_minus'''
         self.gen(p, 'cast_expression')
 
-    def p_cast_expression5(self, p):
+    def p_cast_expression3(self, p):
         '''cast_expression : '(' name dims ')' unary_expression_not_plus_minus'''
         self.gen(p, 'cast_expression')
 
@@ -508,8 +504,21 @@ class StatementParser(BaseParser):
         self.gen(p, 'variable_declarator', self.binary(p))
 
         # if first declaration then no comma else a comma exists
-        p[0]['type'] = p[-1]['astName'] if p[-1] is not ',' else p[-2]['type']
-        # TODO deal with the initialization rule
+        typeSource = p[-2] if p[-1] is ',' else p[-1]
+        p[0]['type'] = typeSource['type']
+
+        # Only one among the typeSource and variable_declarator_id should
+        # have dimension information
+        if p[0]['type'] == 'reference':
+            p[0]['reference'] = typeSource['reference']
+            if type(p[0]['reference'][-1]) is int and p[1].get('dim'):
+                print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
+                return
+
+        if p[1].get('dim'):
+            if not p[0].get('reference'):
+                p[0]['reference'] = [p[0]['type']]
+            p[0]['reference'] += p[1].get('dim') * [0]
 
         # using a prefix 'var_' for all variables in symbol table
         lastTable = self.symTabStack[-1]
@@ -526,26 +535,50 @@ class StatementParser(BaseParser):
 
             # If a primitive data type, then get size from the GST
             # else allocate on heap and store pointer
-            lastTable[varName]['size'] = p[1]['count'] * 4
+            lastTable[varName]['size'] = 4
             if self.gst.get(p[0]['type']):
                 if self.gst[p[0]['type']]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = p[1]['count'] * self.gst[p[0]['type']]['size']
+                    lastTable[varName]['size'] = self.gst[p[0]['type']]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
             lastTable['size'] = lastTable[varName]['offset']
 
+            if len(p) == 4:
+                if not isinstance(p[3]['type'], list):
+                    p[3]['type'] = [p[3]['type']]
+                if p[3]['type'] == 0:
+                    p[3]['type'] = p[0]['type'] if p[0]['type'] != 'reference' else p[0]['reference'][0]
+
+                p[3]['type'] = [p[3]['type'][0]] + p[3]['type'][len(p[3]['type'])-1:0:-1]
+                if not p[0]['type'] == 'reference':
+                    if not p[0]['type'] == p[3]['type'][0]:
+                        print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(varName, self.lexer.lineno))
+                else:
+                    if not (p[3]['type'][0] == 0 or p[3]['type'][0] == p[0]['reference'][0]):
+                        print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(varName, self.lexer.lineno))
+                    elif len(p[3]['type']) != len(p[0]['reference']):
+                        print('Dimensions do not match accross the assignment operator for \'{}\' at line #{} # TODO'.format(varName, self.lexer.lineno))
+                    else:
+                        p[0]['reference'] = [p[0]['reference'][0]] + p[3]['type'][1:]
+
+            if p[0]['type'] == 'reference':
+                lastTable[varName]['reference'] = p[0]['reference']
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
         self.gen(p, 'variable_declarator_id')
-        p[0]['count'] = 1
         p[0]['varName'] = p[1]['astName']
+        if p[2]:
+            p[0]['dim'] = p[2]['dim']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
                                 | array_initializer'''
         self.gen(p, 'variable_initializer')
+        if not p[1].get('type'):
+            # TODO
+            p[1]['type'] = 0
 
     def p_statement(self, p):
         '''statement : statement_without_trailing_substatement
@@ -596,28 +629,34 @@ class StatementParser(BaseParser):
     def p_array_initializer(self, p):
         '''array_initializer : '{' comma_opt '}' '''
         self.gen(p, 'array_initializer')
+        # unknown data type and zero length of array
+        p[0]['type'] = [0, 0]
 
     def p_array_initializer2(self, p):
         '''array_initializer : '{' variable_initializers '}'
                              | '{' variable_initializers ',' '}' '''
         self.gen(p, 'array_initializer')
+        p[0]['type'] = p[2]['type']
 
     def p_variable_initializers(self, p):
         '''variable_initializers : variable_initializer
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
+        if len(p) == 2:
+            p[0]['type'].append(1)
+        else:
+            # the following condition also ensures that the data type is same
+            if p[1]['type'][0:-1] == p[3]['type']:
+                p[0]['type'] = p[1]['type']
+                p[0]['type'][-1] += 1
+            else:
+                print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
 
     def p_method_invocation(self, p):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
     def p_method_invocation2(self, p):
-        '''method_invocation : name '.' type_arguments NAME '(' argument_list_opt ')'
-                             | primary '.' type_arguments NAME '(' argument_list_opt ')'
-                             | SUPER '.' type_arguments NAME '(' argument_list_opt ')' '''
-        self.gen(p, 'method_invocation')
-
-    def p_method_invocation3(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
                              | primary '.' NAME '(' argument_list_opt ')'
                              | SUPER '.' NAME '(' argument_list_opt ')' '''
@@ -885,46 +924,22 @@ class StatementParser(BaseParser):
         self.gen(p, 'explicit_constructor_invocation')
 
     def p_explicit_constructor_invocation2(self, p):
-        '''explicit_constructor_invocation : type_arguments SUPER '(' argument_list_opt ')' ';'
-                                           | type_arguments THIS '(' argument_list_opt ')' ';' '''
-        self.gen(p, 'explicit_constructor_invocation')
-
-    def p_explicit_constructor_invocation3(self, p):
         '''explicit_constructor_invocation : primary '.' SUPER '(' argument_list_opt ')' ';'
                                            | name '.' SUPER '(' argument_list_opt ')' ';'
                                            | primary '.' THIS '(' argument_list_opt ')' ';'
                                            | name '.' THIS '(' argument_list_opt ')' ';' '''
         self.gen(p, 'explicit_constructor_invocation')
 
-    def p_explicit_constructor_invocation4(self, p):
-        '''explicit_constructor_invocation : primary '.' type_arguments SUPER '(' argument_list_opt ')' ';'
-                                           | name '.' type_arguments SUPER '(' argument_list_opt ')' ';'
-                                           | primary '.' type_arguments THIS '(' argument_list_opt ')' ';'
-                                           | name '.' type_arguments THIS '(' argument_list_opt ')' ';' '''
-        self.gen(p, 'explicit_constructor_invocation')
-
     def p_class_instance_creation_expression(self, p):
-        '''class_instance_creation_expression : NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
-        self.gen(p, 'class_instance_creation_expression')
-
-    def p_class_instance_creation_expression2(self, p):
         '''class_instance_creation_expression : NEW class_type '(' argument_list_opt ')' class_body_opt'''
         self.gen(p, 'class_instance_creation_expression')
 
-    def p_class_instance_creation_expression3(self, p):
-        '''class_instance_creation_expression : primary '.' NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
-        self.gen(p, 'class_instance_creation_expression')
-
-    def p_class_instance_creation_expression4(self, p):
+    def p_class_instance_creation_expression2(self, p):
         '''class_instance_creation_expression : primary '.' NEW class_type '(' argument_list_opt ')' class_body_opt'''
         self.gen(p, 'class_instance_creation_expression')
 
-    def p_class_instance_creation_expression5(self, p):
+    def p_class_instance_creation_expression3(self, p):
         '''class_instance_creation_expression : class_instance_creation_expression_name NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        self.gen(p, 'class_instance_creation_expression')
-
-    def p_class_instance_creation_expression6(self, p):
-        '''class_instance_creation_expression : class_instance_creation_expression_name NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
         self.gen(p, 'class_instance_creation_expression')
 
     def p_class_instance_creation_expression_name(self, p):
@@ -977,15 +992,18 @@ class NameParser(BaseParser):
     def p_simple_name(self, p):
         '''simple_name : NAME'''
         self.gen(p, 'simple_name')
-        toFind = 'var_' + p[0]['astName']
-        for scope in reversed(self.symTabStack):
-            if scope.get(toFind):
-                p[0]['type'] = scope[toFind]['type']
-                break
+        p[0]['type'] = [p[0]['astName']]
+
+        # toFind = 'var_' + p[0]['astName']
+        # for scope in reversed(self.symTabStack):
+            # if scope.get(toFind):
+                # p[0]['type'] = scope[toFind]['type']
+                # break
 
     def p_qualified_name(self, p):
         '''qualified_name : name '.' simple_name'''
         self.gen(p, 'qualified_name')
+        p[0]['type'] = p[1]['type'] + p[3]['type']
 
 class LiteralParser(BaseParser):
 
@@ -1065,6 +1083,9 @@ class TypeParser(BaseParser):
         '''type : primitive_type
                 | reference_type'''
         self.gen(p, 'type')
+        if not p[0].get('type') ==  'primitive_type':
+            p[0]['reference'] = p[0]['type']
+            p[0]['type'] = 'reference'
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -1077,193 +1098,33 @@ class TypeParser(BaseParser):
                           | FLOAT
                           | DOUBLE'''
         self.gen(p, 'primitive_type')
+        p[0]['type'] = 'primitive_type'
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
                           | array_type'''
         self.gen(p, 'reference_type')
-        # TODO construct p[0]['astName'], Can't be simply done by p[1]['astName']
 
     def p_class_or_interface_type(self, p):
-        '''class_or_interface_type : class_or_interface
-                                   | generic_type'''
+        '''class_or_interface_type : class_or_interface'''
         self.gen(p, 'class_or_interface_type')
+        # Not implementing generic_type
 
     def p_class_type(self, p):
         '''class_type : class_or_interface_type'''
         self.gen(p, 'class_type')
 
     def p_class_or_interface(self, p):
-        '''class_or_interface : name
-                              | generic_type '.' name'''
+        '''class_or_interface : name'''
         self.gen(p, 'class_or_interface')
-
-    def p_generic_type(self, p):
-        '''generic_type : class_or_interface type_arguments'''
-        self.gen(p, 'generic_type')
-
-    def p_generic_type2(self, p):
-        '''generic_type : class_or_interface '<' '>' '''
-        self.gen(p, 'generic_type')
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
                       | name dims'''
         self.gen(p, 'array_type')
-
-    def p_array_type2(self, p):
-        '''array_type : generic_type dims'''
-        self.gen(p, 'array_type')
-
-    def p_array_type3(self, p):
-        '''array_type : generic_type '.' name dims'''
-        self.gen(p, 'array_type')
-
-    def p_type_arguments(self, p):
-        '''type_arguments : '<' type_argument_list1'''
-        self.gen(p, 'type_arguments')
-
-    def p_type_argument_list1(self, p):
-        '''type_argument_list1 : type_argument1
-                               | type_argument_list ',' type_argument1'''
-        self.gen(p, 'type_argument_list1')
-
-    def p_type_argument_list(self, p):
-        '''type_argument_list : type_argument
-                              | type_argument_list ',' type_argument'''
-        self.gen(p, 'type_argument_list')
-
-    def p_type_argument(self, p):
-        '''type_argument : reference_type
-                         | wildcard'''
-        self.gen(p, 'type_argument')
-
-    def p_type_argument1(self, p):
-        '''type_argument1 : reference_type1
-                          | wildcard1'''
-        self.gen(p, 'type_argument1')
-
-    def p_reference_type1(self, p):
-        '''reference_type1 : reference_type '>'
-                           | class_or_interface '<' type_argument_list2'''
-        self.gen(p, 'reference_type1')
-
-    def p_type_argument_list2(self, p):
-        '''type_argument_list2 : type_argument2
-                               | type_argument_list ',' type_argument2'''
-        self.gen(p, 'type_argument_list2')
-
-    def p_type_argument2(self, p):
-        '''type_argument2 : reference_type2
-                          | wildcard2'''
-        self.gen(p, 'type_argument2')
-
-    def p_reference_type2(self, p):
-        '''reference_type2 : reference_type RSHIFT
-                           | class_or_interface '<' type_argument_list3'''
-        self.gen(p, 'reference_type2')
-
-    def p_type_argument_list3(self, p):
-        '''type_argument_list3 : type_argument3
-                               | type_argument_list ',' type_argument3'''
-        self.gen(p, 'type_argument_list3')
-
-    def p_type_argument3(self, p):
-        '''type_argument3 : reference_type3
-                          | wildcard3'''
-        self.gen(p, 'type_argument3')
-
-    def p_reference_type3(self, p):
-        '''reference_type3 : reference_type RRSHIFT'''
-        self.gen(p, 'reference_type3')
-
-    def p_wildcard(self, p):
-        '''wildcard : '?'
-                    | '?' wildcard_bounds'''
-        self.gen(p, 'wildcard')
-
-    def p_wildcard_bounds(self, p):
-        '''wildcard_bounds : EXTENDS reference_type
-                           | SUPER reference_type'''
-        self.gen(p, 'wildcard_bounds')
-
-    def p_wildcard1(self, p):
-        '''wildcard1 : '?' '>'
-                     | '?' wildcard_bounds1'''
-        self.gen(p, 'wildcard1')
-
-    def p_wildcard_bounds1(self, p):
-        '''wildcard_bounds1 : EXTENDS reference_type1
-                            | SUPER reference_type1'''
-        self.gen(p, 'wildcard_bounds1')
-
-    def p_wildcard2(self, p):
-        '''wildcard2 : '?' RSHIFT
-                     | '?' wildcard_bounds2'''
-        self.gen(p, 'wildcard2')
-
-    def p_wildcard_bounds2(self, p):
-        '''wildcard_bounds2 : EXTENDS reference_type2
-                            | SUPER reference_type2'''
-        self.gen(p, 'wildcard_bounds2')
-
-    def p_wildcard3(self, p):
-        '''wildcard3 : '?' RRSHIFT
-                     | '?' wildcard_bounds3'''
-        self.gen(p, 'wildcard3')
-
-    def p_wildcard_bounds3(self, p):
-        '''wildcard_bounds3 : EXTENDS reference_type3
-                            | SUPER reference_type3'''
-        self.gen(p, 'wildcard_bounds3')
-
-    def p_type_parameter_header(self, p):
-        '''type_parameter_header : NAME'''
-        self.gen(p, 'type_parameter_header')
-
-    def p_type_parameters(self, p):
-        '''type_parameters : '<' type_parameter_list1'''
-        self.gen(p, 'type_parameters')
-
-    def p_type_parameter_list(self, p):
-        '''type_parameter_list : type_parameter
-                               | type_parameter_list ',' type_parameter'''
-        self.gen(p, 'type_parameter_list')
-
-    def p_type_parameter(self, p):
-        '''type_parameter : type_parameter_header
-                          | type_parameter_header EXTENDS reference_type
-                          | type_parameter_header EXTENDS reference_type additional_bound_list'''
-        self.gen(p, 'type_parameter')
-
-    def p_additional_bound_list(self, p):
-        '''additional_bound_list : additional_bound
-                                 | additional_bound_list additional_bound'''
-        self.gen(p, 'additional_bound_list')
-
-    def p_additional_bound(self, p):
-        '''additional_bound : '&' reference_type'''
-        self.gen(p, 'additional_bound')
-
-    def p_type_parameter_list1(self, p):
-        '''type_parameter_list1 : type_parameter1
-                                | type_parameter_list ',' type_parameter1'''
-        self.gen(p, 'type_parameter_list1')
-
-    def p_type_parameter1(self, p):
-        '''type_parameter1 : type_parameter_header '>'
-                           | type_parameter_header EXTENDS reference_type1
-                           | type_parameter_header EXTENDS reference_type additional_bound_list1'''
-        self.gen(p, 'type_parameter1')
-
-    def p_additional_bound_list1(self, p):
-        '''additional_bound_list1 : additional_bound1
-                                  | additional_bound_list additional_bound1'''
-        self.gen(p, 'additional_bound_list1')
-
-    def p_additional_bound1(self, p):
-        '''additional_bound1 : '&' reference_type1'''
-        self.gen(p, 'additional_bound1')
+        if not isinstance(p[1]['type'], list):
+            p[1]['type'] = [p[1]['type']]
+        p[0]['type'] = p[1]['type'] + p[2]['dim']
 
 class ClassParser(BaseParser):
 
@@ -1288,8 +1149,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'class_header')
 
     def p_class_header_name(self, p):
-        '''class_header_name : class_header_name1 type_parameters
-                             | class_header_name1'''
+        '''class_header_name : class_header_name1'''
         self.gen(p, 'class_header_name')
 
     def p_class_header_name1(self, p):
@@ -1384,9 +1244,8 @@ class ClassParser(BaseParser):
         currScope['size'] = 0
 
     def p_constructor_header_name(self, p):
-        '''constructor_header_name : modifiers_opt type_parameters NAME '('
-                                   | modifiers_opt NAME '(' '''
-        name = p[3] if len(p) == 5 else p[2]
+        '''constructor_header_name : modifiers_opt NAME '(' '''
+        name = p[2]
         self.startNewScope(name, 'constructor')
         currScope = self.symTabStack[-1]
         currScope['size'] = -8
@@ -1483,9 +1342,8 @@ class ClassParser(BaseParser):
         currScope['size'] = 0
 
     def p_method_header_name(self, p):
-        '''method_header_name : modifiers_opt type_parameters type NAME '('
-                              | modifiers_opt type NAME '(' '''
-        name = p[3] if p[4] == '(' else p[4]
+        '''method_header_name : modifiers_opt type NAME '(' '''
+        name = p[3]
         self.startNewScope(name, 'method')
         currScope = self.symTabStack[-1]
         currScope['size'] = -8
@@ -1504,8 +1362,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'interface_header')
 
     def p_interface_header_name(self, p):
-        '''interface_header_name : interface_header_name1 type_parameters
-                                 | interface_header_name1'''
+        '''interface_header_name : interface_header_name1'''
         self.gen(p, 'interface_header_name')
 
     def p_interface_header_name1(self, p):
@@ -1567,8 +1424,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'enum_header')
 
     def p_enum_header_name(self, p):
-        '''enum_header_name : modifiers_opt ENUM NAME
-                            | modifiers_opt ENUM NAME type_parameters'''
+        '''enum_header_name : modifiers_opt ENUM NAME'''
         self.gen(p, 'enum_header_name')
 
     def p_enum_body(self, p):
@@ -1655,14 +1511,6 @@ class ClassParser(BaseParser):
         self.gen(p, 'annotation_type_declaration_header_name')
 
     def p_annotation_type_declaration_header_name2(self, p):
-        '''annotation_type_declaration_header_name : modifiers '@' INTERFACE NAME type_parameters'''
-        self.gen(p, 'annotation_type_declaration_header_name')
-
-    def p_annotation_type_declaration_header_name3(self, p):
-        '''annotation_type_declaration_header_name : '@' INTERFACE NAME type_parameters'''
-        self.gen(p, 'annotation_type_declaration_header_name')
-
-    def p_annotation_type_declaration_header_name4(self, p):
         '''annotation_type_declaration_header_name : '@' INTERFACE NAME'''
         self.gen(p, 'annotation_type_declaration_header_name')
 
@@ -1695,8 +1543,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'annotation_method_header')
 
     def p_annotation_method_header_name(self, p):
-        '''annotation_method_header_name : modifiers_opt type_parameters type NAME '('
-                                         | modifiers_opt type NAME '(' '''
+        '''annotation_method_header_name : modifiers_opt type NAME '(' '''
         self.gen(p, 'annotation_method_header_name')
 
     def p_annotation_method_header_default_value_opt(self, p):
