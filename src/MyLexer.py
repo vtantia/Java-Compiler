@@ -4,11 +4,11 @@ class MyLexer(object):
                 'byte', 'short', 'int', 'long', 'char', 'float', 'double', 'boolean', 'null',
                 'true', 'false',
                 'final', 'public', 'protected', 'private', 'abstract', 'static', 'strictfp', 'transient', 'volatile',
-                'synchronized', 'native',
-                'throws', 'default',
+                'native',
+                'default',
                 'instanceof',
                 'if', 'else', 'while', 'for', 'switch', 'case', 'assert', 'do',
-                'break', 'continue', 'return', 'throw', 'try', 'catch', 'finally', 'new',
+                'break', 'continue', 'return', 'new',
                 'package', 'import'
     )
 
