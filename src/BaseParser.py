@@ -164,3 +164,12 @@ class BaseParser(object):
         else:
             # TODO
             return 1
+
+    def findVar(self, var):
+        toFind = 'var_' + var['astName']
+        for scope in reversed(self.symTabStack):
+            if scope.get(toFind):
+                var['type'] = scope[toFind]['type']
+                break
+        else:
+            print('Variable not defined {} at line #{}'.format(var['astName'], self.lexer.lineno))

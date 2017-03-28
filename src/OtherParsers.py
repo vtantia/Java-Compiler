@@ -24,8 +24,7 @@ class ExpressionParser(BaseParser):
     def p_assignment(self, p):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', self.binary(p))
-        if p[0]['astName'] == '=':
-
+        #  if p[0]['astName'] == '=':
 
     def p_assignment_operator(self, p):
         '''assignment_operator : '='
@@ -44,6 +43,8 @@ class ExpressionParser(BaseParser):
 
     def binary_exp_cond(self, p):
         if len(p) == 6:
+            if isinstance(p[1]['type'], list):
+                p[1]['type'] = self.findVar(p[1])
             type1, type2 = p[3]['type'], p[5]['type']
             if type1 in self.numsChar and type2 in self.numsChar:
                 found = 0
@@ -62,15 +63,19 @@ class ExpressionParser(BaseParser):
         '''conditional_expression : conditional_or_expression
                                   | conditional_or_expression '?' expression ':' conditional_expression'''
         self.gen(p, 'conditional_expression')
+        self.binary_exp_cond(p)
 
     def p_conditional_expression_not_name(self, p):
         '''conditional_expression_not_name : conditional_or_expression_not_name
                                            | conditional_or_expression_not_name '?' expression ':' conditional_expression
                                            | name '?' expression ':' conditional_expression'''
         self.gen(p, 'conditional_expression_not_name')
+        self.binary_exp_cond(p)
 
     def binary_exp_bool(self, p):
         if len(p) == 4:
+            if isinstance(p[1]['type'], list):
+                p[1]['type'] = self.findVar(p[1])
             type1, type2 = p[1]['type'], p[3]['type']
             if type1 == 'boolean' and type2 == 'boolean':
                 p[0]['type'] = 'boolean'
@@ -140,12 +145,25 @@ class ExpressionParser(BaseParser):
                                    | and_expression_not_name '&' equality_expression
                                    | name '&' equality_expression'''
         self.gen(p, 'and_expression_not_name', self.binary(p))
+        if not p[1].get('type'):
+            p[1]['type'] = self.findVar(p[1])
         self.binary_exp_rel(p)
 
     def binary_exp_rel(self, p):
         if len(p) == 4:
+            print("Outside")
+            if isinstance(p[1]['type'], list):
+                print("Inside")
+                p[1]['type'] = self.findVar(p[1])
+            for i in range(1, 4):
+                print(p[i]['astName'])
+            print(p[1]['type'])
+            print(p[3]['type'])
             type1, type2 = p[1]['type'], p[3]['type']
-            if type1 in numsChar and type2 in numsChar:
+            op = p[2]['astName']
+            if type1 in self.numsChar and type2 in self.numsChar:
+                p[0]['type'] = 'boolean'
+            elif (op == '==' or op == '!=') and type1 == 'boolean' and type2 == 'boolean':
                 p[0]['type'] = 'boolean'
             else:
                 print('Not matching types for {} at line #{}'.format(p[0]['astName'], self.lexer.lineno))
@@ -201,6 +219,8 @@ class ExpressionParser(BaseParser):
 
     def binary_exp_shift(self, p):
         if len(p) == 4:
+            if isinstance (p[1].get('type'), list):
+                p[1]['type'] = self.findVar(p[1])
             type1, type2 = p[1]['type'], p[3]['type']
             if type1 in self.intsChar and type2 in self.intsChar:
                 p[0]['type'] = 'long' if type1 == 'long' or type2 == 'long' else 'int'
@@ -228,6 +248,8 @@ class ExpressionParser(BaseParser):
 
     def binary_exp_addmult(self, p):
         if len(p) == 4:
+            if isinstance (p[1].get('type'), list):
+                p[1]['type'] = self.findVar(p[1])
             type1, type2 = p[1]['type'], p[3]['type']
             if p[0]['astName'] != '%':
                 if type1 in self.numsChar and type2 in self.numsChar:
@@ -240,6 +262,8 @@ class ExpressionParser(BaseParser):
 
                     if found == 0:
                         p[0]['type'] == 'int'
+                elif p[2]['astName'] == '+' and (type1 == "String" or type2 == "String"):
+                    p[0]['type'] = 'String'
                 else:
                     print('Not matching types for {} at line #{}'.format(p[0]['astName'], self.lexer.lineno))
             else:
@@ -285,9 +309,9 @@ class ExpressionParser(BaseParser):
         if p[0]['astName'] in ['+', '-']:
             if p[1]['type'] in self.intsCharWoLong:
                 p[0]['type'] = 'int'
-            else if p[1]['type'] in self.decimals + ['long']:
+            elif p[1]['type'] in self.decimals + ['long']:
                 p[0]['type'] = p[1]['type']
-            else
+            else:
                 print('Not a matching type for {} at line #{}'.format(p[0]['astName'], self.lexer.lineno))
 
     def p_unary_expression(self, p):
@@ -297,7 +321,7 @@ class ExpressionParser(BaseParser):
                             | '-' unary_expression
                             | unary_expression_not_plus_minus'''
         self.gen(p, 'unary_expression', self.unary(p))
-        unary_exp_plus(p)
+        self.unary_exp_plus(p)
 
     def p_unary_expression_not_name(self, p):
         '''unary_expression_not_name : pre_increment_expression
@@ -306,7 +330,7 @@ class ExpressionParser(BaseParser):
                                      | '-' unary_expression
                                      | unary_expression_not_plus_minus_not_name'''
         self.gen(p, 'unary_expression_not_name', self.unary(p))
-        unary_exp_plus(p)
+        self.unary_exp_plus(p)
 
     def p_pre_increment_expression(self, p):
         '''pre_increment_expression : PLUSPLUS unary_expression'''
@@ -322,15 +346,15 @@ class ExpressionParser(BaseParser):
         if p[0]['astName'] == '~':
             if p[1]['type'] in self.intsCharWoLong:
                 p[0]['type'] = 'int'
-            else if p[1]['type'] == 'long':
+            elif p[1]['type'] == 'long':
                 p[0]['type'] = p[1]['type']
-            else
+            else:
                 print('Not a matching type for ~ at line #{}'.format(self.lexer.lineno))
 
         if p[0]['astName'] == '!':
             if p[1]['type'] == 'boolean':
                 p[0]['type'] == 'boolean'
-            else
+            else:
                 print('Not a matching type for ! at line #{}'.format(self.lexer.lineno))
 
     def p_unary_expression_not_plus_minus(self, p):
@@ -355,6 +379,9 @@ class ExpressionParser(BaseParser):
                               | post_increment_expression
                               | post_decrement_expression'''
         self.gen(p, 'postfix_expression')
+        if isinstance (p[0].get('type'), list):
+            p[0]['type'] = self.findVar(p[0])
+
 
     def p_postfix_expression_not_name(self, p):
         '''postfix_expression_not_name : primary
@@ -392,22 +419,15 @@ class ExpressionParser(BaseParser):
                                 | method_invocation
                                 | array_access'''
         self.gen(p, 'primary_no_new_array')
+        if p[0]['astName'] == 'this':
+            pass
+            # TODO
 
     def p_primary_no_new_array2(self, p):
         '''primary_no_new_array : '(' name ')'
                                 | '(' expression_not_name ')' '''
         self.gen(p, 'primary_no_new_array')
-
-    def p_primary_no_new_array3(self, p):
-        '''primary_no_new_array : name '.' THIS'''
-        self.gen(p, 'primary_no_new_array')
-
-    def p_primary_no_new_array4(self, p):
-        '''primary_no_new_array : name '.' CLASS
-                                | name dims '.' CLASS
-                                | primitive_type dims '.' CLASS
-                                | primitive_type '.' CLASS'''
-        self.gen(p, 'primary_no_new_array')
+        p[0]['type'], p[0]['reference'] = p[2]['type'], p[2]['reference']
 
     def p_dims_opt(self, p):
         '''dims_opt : dims'''
@@ -534,9 +554,8 @@ class StatementParser(BaseParser):
             if len(p) == 4:
                 if self.checkTypeAssignment(p[0], p[3], varName):
                     # reverse the dimensions
-                    if p[3].get('reference'):
-                        reference, dim = self.splitType(p[3]['reference'])
-                        p[0]['reference'] = reference + dim[::-1]
+                    reference, dim = self.splitType(p[0]['reference'])
+                    p[0]['reference'] = reference + dim[::-1] if isinstance(reference, list) else [reference] + dim[::-1]
 
             lastTable[varName]['reference'] = p[0]['reference']
 
@@ -850,12 +869,6 @@ class NameParser(BaseParser):
         self.gen(p, 'simple_name')
         p[0]['type'] = [p[0]['astName']]
 
-        # toFind = 'var_' + p[0]['astName']
-        # for scope in reversed(self.symTabStack):
-            # if scope.get(toFind):
-                # p[0]['type'] = scope[toFind]['type']
-                # break
-
     def p_qualified_name(self, p):
         '''qualified_name : name '.' simple_name'''
         self.gen(p, 'qualified_name')
@@ -973,6 +986,7 @@ class TypeParser(BaseParser):
     def p_class_or_interface(self, p):
         '''class_or_interface : name'''
         self.gen(p, 'class_or_interface')
+        p[0]['type'] = p[0]['astName']
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
