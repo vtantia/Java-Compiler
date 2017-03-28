@@ -279,8 +279,7 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'primary_no_new_array')
 
     def p_primary_no_new_array3(self, p):
-        '''primary_no_new_array : name '.' THIS
-                                | name '.' SUPER'''
+        '''primary_no_new_array : name '.' THIS'''
         self.gen(p, 'primary_no_new_array')
 
     def p_primary_no_new_array4(self, p):
@@ -354,10 +353,7 @@ class StatementParser(BaseParser):
     def p_block_statement(self, p):
         '''block_statement : local_variable_declaration_statement
                            | statement
-                           | class_declaration
-                           | interface_declaration
-                           | annotation_type_declaration
-                           | enum_declaration'''
+                           | class_declaration'''
         self.gen(p, 'block_statement')
 
     def p_local_variable_declaration_statement(self, p):
@@ -521,8 +517,7 @@ class StatementParser(BaseParser):
 
     def p_method_invocation2(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
-                             | primary '.' NAME '(' argument_list_opt ')'
-                             | SUPER '.' NAME '(' argument_list_opt ')' '''
+                             | primary '.' NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
     def p_labeled_statement(self, p):
@@ -782,14 +777,11 @@ class StatementParser(BaseParser):
         self.gen(p, 'finally')
 
     def p_explicit_constructor_invocation(self, p):
-        '''explicit_constructor_invocation : THIS '(' argument_list_opt ')' ';'
-                                           | SUPER '(' argument_list_opt ')' ';' '''
+        '''explicit_constructor_invocation : THIS '(' argument_list_opt ')' ';' '''
         self.gen(p, 'explicit_constructor_invocation')
 
     def p_explicit_constructor_invocation2(self, p):
-        '''explicit_constructor_invocation : primary '.' SUPER '(' argument_list_opt ')' ';'
-                                           | name '.' SUPER '(' argument_list_opt ')' ';'
-                                           | primary '.' THIS '(' argument_list_opt ')' ';'
+        '''explicit_constructor_invocation : primary '.' THIS '(' argument_list_opt ')' ';'
                                            | name '.' THIS '(' argument_list_opt ')' ';' '''
         self.gen(p, 'explicit_constructor_invocation')
 
@@ -815,14 +807,12 @@ class StatementParser(BaseParser):
         self.gen(p, 'class_body_opt')
 
     def p_field_access(self, p):
-        '''field_access : primary '.' NAME
-                        | SUPER '.' NAME'''
+        '''field_access : primary '.' NAME'''
         self.gen(p, 'field_access')
 
     def p_array_access(self, p):
         '''array_access : name '[' expression ']'
-                        | primary_no_new_array '[' expression ']'
-                        | array_creation_with_array_initializer '[' expression ']' '''
+                        | primary_no_new_array '[' expression ']' '''
         self.gen(p, 'array_access')
 
     def p_array_creation_with_array_initializer(self, p):
@@ -932,8 +922,7 @@ class TypeParser(BaseParser):
                     | SYNCHRONIZED
                     | TRANSIENT
                     | VOLATILE
-                    | STRICTFP
-                    | annotation'''
+                    | STRICTFP'''
         self.gen(p, 'modifier')
 
     def p_type(self, p):
@@ -986,10 +975,7 @@ class TypeParser(BaseParser):
 class ClassParser(BaseParser):
 
     def p_type_declaration(self, p):
-        '''type_declaration : class_declaration
-                            | interface_declaration
-                            | enum_declaration
-                            | annotation_type_declaration'''
+        '''type_declaration : class_declaration'''
         self.gen(p, 'type_declaration')
 
     def p_type_declaration2(self, p):
@@ -1003,7 +989,7 @@ class ClassParser(BaseParser):
         self.endCurrScope()
 
     def p_class_header(self, p):
-        '''class_header : class_header_name class_header_extends_opt class_header_implements_opt'''
+        '''class_header : class_header_name'''
         self.gen(p, 'class_header')
 
     def p_class_header_name(self, p):
@@ -1014,33 +1000,6 @@ class ClassParser(BaseParser):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
         self.startNewScope(p[3], 'class')
         self.gen(p, 'class_header_name1')
-
-    def p_class_header_extends_opt(self, p):
-        '''class_header_extends_opt : class_header_extends
-                                    | empty'''
-        self.gen(p, 'class_header_extends_opt')
-
-    def p_class_header_extends(self, p):
-        '''class_header_extends : EXTENDS class_type'''
-        self.gen(p, 'class_header_extends')
-
-    def p_class_header_implements_opt(self, p):
-        '''class_header_implements_opt : class_header_implements
-                                       | empty'''
-        self.gen(p, 'class_header_implements_opt')
-
-    def p_class_header_implements(self, p):
-        '''class_header_implements : IMPLEMENTS interface_type_list'''
-        self.gen(p, 'class_header_implements')
-
-    def p_interface_type_list(self, p):
-        '''interface_type_list : interface_type
-                               | interface_type_list ',' interface_type'''
-        self.gen(p, 'interface_type_list')
-
-    def p_interface_type(self, p):
-        '''interface_type : class_or_interface_type'''
-        self.gen(p, 'interface_type')
 
     def p_class_body(self, p):
         '''class_body : '{' class_body_declarations_opt '}' '''
@@ -1072,10 +1031,7 @@ class ClassParser(BaseParser):
     def p_class_member_declaration(self, p):
         '''class_member_declaration : field_declaration
                                     | class_declaration
-                                    | method_declaration
-                                    | interface_declaration
-                                    | enum_declaration
-                                    | annotation_type_declaration'''
+                                    | method_declaration'''
         self.gen(p, 'class_member_declaration')
 
     def p_class_member_declaration2(self, p):
@@ -1216,126 +1172,6 @@ class ClassParser(BaseParser):
         '''method_header_extended_dims : dims_opt'''
         self.gen(p, 'method_header_extended_dims')
 
-    def p_interface_declaration(self, p):
-        '''interface_declaration : interface_header interface_body'''
-        self.gen(p, 'interface_declaration')
-
-    def p_interface_header(self, p):
-        '''interface_header : interface_header_name interface_header_extends_opt'''
-        self.gen(p, 'interface_header')
-
-    def p_interface_header_name(self, p):
-        '''interface_header_name : interface_header_name1'''
-        self.gen(p, 'interface_header_name')
-
-    def p_interface_header_name1(self, p):
-        '''interface_header_name1 : modifiers_opt INTERFACE NAME'''
-        self.gen(p, 'interface_header_name1')
-
-    def p_interface_header_extends_opt(self, p):
-        '''interface_header_extends_opt : interface_header_extends'''
-        self.gen(p, 'interface_header_extends_opt')
-
-    def p_interface_header_extends_opt2(self, p):
-        '''interface_header_extends_opt : empty'''
-        self.gen(p, 'interface_header_extends_opt')
-
-    def p_interface_header_extends(self, p):
-        '''interface_header_extends : EXTENDS interface_type_list'''
-        self.gen(p, 'interface_header_extends')
-
-    def p_interface_body(self, p):
-        '''interface_body : '{' interface_member_declarations_opt '}' '''
-        self.gen(p, 'interface_body')
-
-    def p_interface_member_declarations_opt(self, p):
-        '''interface_member_declarations_opt : interface_member_declarations'''
-        self.gen(p, 'interface_member_declarations_opt')
-
-    def p_interface_member_declarations_opt2(self, p):
-        '''interface_member_declarations_opt : empty'''
-        self.gen(p, 'interface_member_declarations_opt')
-
-    def p_interface_member_declarations(self, p):
-        '''interface_member_declarations : interface_member_declaration
-                                         | interface_member_declarations interface_member_declaration'''
-        self.gen(p, 'interface_member_declarations')
-
-    def p_interface_member_declaration(self, p):
-        '''interface_member_declaration : constant_declaration
-                                        | abstract_method_declaration
-                                        | class_declaration
-                                        | interface_declaration
-                                        | enum_declaration
-                                        | annotation_type_declaration'''
-        self.gen(p, 'interface_member_declaration')
-
-    def p_interface_member_declaration2(self, p):
-        '''interface_member_declaration : ';' '''
-        self.gen(p, 'interface_member_declaration')
-
-    def p_constant_declaration(self, p):
-        '''constant_declaration : field_declaration'''
-        self.gen(p, 'constant_declaration')
-
-    def p_enum_declaration(self, p):
-        '''enum_declaration : enum_header enum_body'''
-        self.gen(p, 'enum_declaration')
-
-    def p_enum_header(self, p):
-        '''enum_header : enum_header_name class_header_implements_opt'''
-        self.gen(p, 'enum_header')
-
-    def p_enum_header_name(self, p):
-        '''enum_header_name : modifiers_opt ENUM NAME'''
-        self.gen(p, 'enum_header_name')
-
-    def p_enum_body(self, p):
-        '''enum_body : '{' enum_body_declarations_opt '}' '''
-        self.gen(p, 'enum_body')
-
-    def p_enum_body2(self, p):
-        '''enum_body : '{' ',' enum_body_declarations_opt '}' '''
-        self.gen(p, 'enum_body')
-
-    def p_enum_body3(self, p):
-        '''enum_body : '{' enum_constants ',' enum_body_declarations_opt '}' '''
-        self.gen(p, 'enum_body')
-
-    def p_enum_body4(self, p):
-        '''enum_body : '{' enum_constants enum_body_declarations_opt '}' '''
-        self.gen(p, 'enum_body')
-
-    def p_enum_constants(self, p):
-        '''enum_constants : enum_constant
-                          | enum_constants ',' enum_constant'''
-        self.gen(p, 'enum_constants')
-
-    def p_enum_constant(self, p):
-        '''enum_constant : enum_constant_header class_body
-                         | enum_constant_header'''
-        self.gen(p, 'enum_constant')
-
-    def p_enum_constant_header(self, p):
-        '''enum_constant_header : enum_constant_header_name arguments_opt'''
-        self.gen(p, 'enum_constant_header')
-
-    def p_enum_constant_header_name(self, p):
-        '''enum_constant_header_name : modifiers_opt NAME'''
-        self.gen(p, 'enum_constant_header_name')
-
-    def p_arguments_opt(self, p):
-        '''arguments_opt : arguments'''
-        self.gen(p, 'arguments_opt')
-
-    def p_arguments_opt2(self, p):
-        '''arguments_opt : empty'''
-        self.gen(p, 'arguments_opt')
-
-    def p_arguments(self, p):
-        '''arguments : '(' argument_list_opt ')' '''
-        self.gen(p, 'arguments')
-
     def p_argument_list_opt(self, p):
         '''argument_list_opt : argument_list'''
         self.gen(p, 'argument_list_opt')
@@ -1348,140 +1184,6 @@ class ClassParser(BaseParser):
         '''argument_list : expression
                          | argument_list ',' expression'''
         self.gen(p, 'argument_list')
-
-    def p_enum_body_declarations_opt(self, p):
-        '''enum_body_declarations_opt : enum_declarations'''
-        self.gen(p, 'enum_body_declarations_opt')
-
-    def p_enum_body_declarations_opt2(self, p):
-        '''enum_body_declarations_opt : empty'''
-        self.gen(p, 'enum_body_declarations_opt')
-
-    def p_enum_body_declarations(self, p):
-        '''enum_declarations : ';' class_body_declarations_opt'''
-        self.gen(p, 'enum_body_declarations')
-
-    def p_annotation_type_declaration(self, p):
-        '''annotation_type_declaration : annotation_type_declaration_header annotation_type_body'''
-        self.gen(p, 'annotation_type_declaration')
-
-    def p_annotation_type_declaration_header(self, p):
-        '''annotation_type_declaration_header : annotation_type_declaration_header_name class_header_extends_opt class_header_implements_opt'''
-        self.gen(p, 'annotation_type_declaration_header')
-
-    def p_annotation_type_declaration_header_name(self, p):
-        '''annotation_type_declaration_header_name : modifiers '@' INTERFACE NAME'''
-        self.gen(p, 'annotation_type_declaration_header_name')
-
-    def p_annotation_type_declaration_header_name2(self, p):
-        '''annotation_type_declaration_header_name : '@' INTERFACE NAME'''
-        self.gen(p, 'annotation_type_declaration_header_name')
-
-    def p_annotation_type_body(self, p):
-        '''annotation_type_body : '{' annotation_type_member_declarations_opt '}' '''
-        self.gen(p, 'annotation_type_body')
-
-    def p_annotation_type_member_declarations_opt(self, p):
-        '''annotation_type_member_declarations_opt : annotation_type_member_declarations'''
-        self.gen(p, 'annotation_type_member_declarations_opt')
-
-    def p_annotation_type_member_declarations_opt2(self, p):
-        '''annotation_type_member_declarations_opt : empty'''
-        self.gen(p, 'annotation_type_member_declarations_opt')
-
-    def p_annotation_type_member_declarations(self, p):
-        '''annotation_type_member_declarations : annotation_type_member_declaration
-                                               | annotation_type_member_declarations annotation_type_member_declaration'''
-        self.gen(p, 'annotation_type_member_declarations')
-
-    def p_annotation_type_member_declaration(self, p):
-        '''annotation_type_member_declaration : annotation_method_header ';'
-                                              | constant_declaration
-                                              | constructor_declaration
-                                              | type_declaration'''
-        self.gen(p, 'annotation_type_member_declaration')
-
-    def p_annotation_method_header(self, p):
-        '''annotation_method_header : annotation_method_header_name formal_parameter_list_opt ')' method_header_extended_dims annotation_method_header_default_value_opt'''
-        self.gen(p, 'annotation_method_header')
-
-    def p_annotation_method_header_name(self, p):
-        '''annotation_method_header_name : modifiers_opt type NAME '(' '''
-        self.gen(p, 'annotation_method_header_name')
-
-    def p_annotation_method_header_default_value_opt(self, p):
-        '''annotation_method_header_default_value_opt : default_value
-                                                      | empty'''
-        self.gen(p, 'annotation_method_header_default_value_opt')
-
-    def p_default_value(self, p):
-        '''default_value : DEFAULT member_value'''
-        self.gen(p, 'default_value')
-
-    def p_member_value(self, p):
-        '''member_value : conditional_expression_not_name
-                        | name
-                        | annotation
-                        | member_value_array_initializer'''
-        self.gen(p, 'member_value')
-
-    def p_member_value_array_initializer(self, p):
-        '''member_value_array_initializer : '{' member_values ',' '}'
-                                          | '{' member_values '}' '''
-        self.gen(p, 'member_value_array_initializer')
-
-    def p_member_value_array_initializer2(self, p):
-        '''member_value_array_initializer : '{' ',' '}'
-                                          | '{' '}' '''
-        self.gen(p, 'member_value_array_initializer')
-
-    def p_member_values(self, p):
-        '''member_values : member_value
-                         | member_values ',' member_value'''
-        self.gen(p, 'member_values')
-
-    def p_annotation(self, p):
-        '''annotation : normal_annotation
-                      | marker_annotation
-                      | single_member_annotation'''
-        self.gen(p, 'annotation')
-
-    def p_normal_annotation(self, p):
-        '''normal_annotation : annotation_name '(' member_value_pairs_opt ')' '''
-        self.gen(p, 'normal_annotation')
-
-    def p_annotation_name(self, p):
-        '''annotation_name : '@' name'''
-        self.gen(p, 'annotation_name')
-
-    def p_member_value_pairs_opt(self, p):
-        '''member_value_pairs_opt : member_value_pairs'''
-        self.gen(p, 'member_value_pairs_opt')
-
-    def p_member_value_pairs_opt2(self, p):
-        '''member_value_pairs_opt : empty'''
-        self.gen(p, 'member_value_pairs_opt')
-
-    def p_member_value_pairs(self, p):
-        '''member_value_pairs : member_value_pair
-                              | member_value_pairs ',' member_value_pair'''
-        self.gen(p, 'member_value_pairs')
-
-    def p_member_value_pair(self, p):
-        '''member_value_pair : simple_name '=' member_value'''
-        self.gen(p, 'member_value_pair')
-
-    def p_marker_annotation(self, p):
-        '''marker_annotation : annotation_name'''
-        self.gen(p, 'marker_annotation')
-
-    def p_single_member_annotation(self, p):
-        '''single_member_annotation : annotation_name '(' single_member_annotation_member_value ')' '''
-        self.gen(p, 'single_member_annotation')
-
-    def p_single_member_annotation_member_value(self, p):
-        '''single_member_annotation_member_value : member_value'''
-        self.gen(p, 'single_member_annotation_member_value')
 
 class CompilationUnitParser(BaseParser):
 

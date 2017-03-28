@@ -1,6 +1,6 @@
 class MyLexer(object):
 
-    keywords = ('this', 'class', 'void', 'super', 'extends', 'implements', 'enum', 'interface',
+    keywords = ('this', 'class', 'void',
                 'byte', 'short', 'int', 'long', 'char', 'float', 'double', 'boolean', 'null',
                 'true', 'false',
                 'final', 'public', 'protected', 'private', 'abstract', 'static', 'strictfp', 'transient', 'volatile',
