@@ -414,8 +414,9 @@ class StatementParser(BaseParser):
             if len(p) == 4:
                 if self.checkTypeAssignment(p[0], p[3], varName):
                     # reverse the dimensions
-                    reference, dim = self.splitType(p[3]['reference'])
-                    p[0]['reference'] = reference + dim[::-1]
+                    if p[3].get('reference'):
+                        reference, dim = self.splitType(p[3]['reference'])
+                        p[0]['reference'] = reference + dim[::-1]
 
             lastTable[varName]['reference'] = p[0]['reference']
 
@@ -440,8 +441,7 @@ class StatementParser(BaseParser):
                      | if_then_statement
                      | if_then_else_statement
                      | while_statement
-                     | for_statement
-                     | enhanced_for_statement'''
+                     | for_statement'''
         self.gen(p, 'statement')
 
     def p_statement_without_trailing_substatement(self, p):
@@ -453,16 +453,11 @@ class StatementParser(BaseParser):
                                                    | do_statement
                                                    | break_statement
                                                    | continue_statement
-                                                   | return_statement
-                                                   | synchronized_statement
-                                                   | throw_statement
-                                                   | try_statement
-                                                   | try_statement_with_resources'''
+                                                   | return_statement'''
         self.gen(p, 'statement_without_trailing_substatement')
 
     def p_expression_statement(self, p):
-        '''expression_statement : statement_expression ';'
-                                | explicit_constructor_invocation'''
+        '''expression_statement : statement_expression ';' '''
         self.gen(p, 'expression_statement')
 
     def p_statement_expression(self, p):
@@ -595,33 +590,12 @@ class StatementParser(BaseParser):
         '''for_update : statement_expression_list'''
         self.gen(p, 'for_update')
 
-    def p_enhanced_for_statement(self, p):
-        '''enhanced_for_statement : enhanced_for_statement_header statement'''
-        self.gen(p, 'enhanced_for_statement')
-
-    def p_enhanced_for_statement_no_short_if(self, p):
-        '''enhanced_for_statement_no_short_if : enhanced_for_statement_header statement_no_short_if'''
-        self.gen(p, 'enhanced_for_statement_no_short_if')
-
-    def p_enhanced_for_statement_header(self, p):
-        '''enhanced_for_statement_header : enhanced_for_statement_header_init ':' expression ')' '''
-        self.gen(p, 'enhanced_for_statement_header')
-
-    def p_enhanced_for_statement_header_init(self, p):
-        '''enhanced_for_statement_header_init : FOR seen_FOR '(' type NAME dims_opt'''
-        self.gen(p, 'enhanced_for_statement_header_init')
-
-    def p_enhanced_for_statement_header_init2(self, p):
-        '''enhanced_for_statement_header_init : FOR seen_FOR '(' modifiers type NAME dims_opt'''
-        self.gen(p, 'enhanced_for_statement_header_init')
-
     def p_statement_no_short_if(self, p):
         '''statement_no_short_if : statement_without_trailing_substatement
                                  | labeled_statement_no_short_if
                                  | if_then_else_statement_no_short_if
                                  | while_statement_no_short_if
-                                 | for_statement_no_short_if
-                                 | enhanced_for_statement_no_short_if'''
+                                 | for_statement_no_short_if'''
         self.gen(p, 'statement_no_short_if')
 
     def p_assert_statement(self, p):
@@ -693,97 +667,6 @@ class StatementParser(BaseParser):
     def p_return_statement(self, p):
         '''return_statement : RETURN expression_opt ';' '''
         self.gen(p, 'return_statement')
-
-    def p_synchronized_statement(self, p):
-        '''synchronized_statement : SYNCHRONIZED '(' expression ')' block'''
-        self.gen(p, 'synchronized_statement')
-
-    def p_throw_statement(self, p):
-        '''throw_statement : THROW expression ';' '''
-        self.gen(p, 'throw_statement')
-
-    def p_try_statement(self, p):
-        '''try_statement : TRY try_block catches
-                         | TRY try_block catches_opt finally'''
-        self.gen(p, 'try_statement')
-
-    def p_try_block(self, p):
-        '''try_block : block'''
-        self.gen(p, 'try_block')
-
-    def p_catches(self, p):
-        '''catches : catch_clause
-                   | catches catch_clause'''
-        self.gen(p, 'catches')
-
-    def p_catches_opt(self, p):
-        '''catches_opt : catches'''
-        self.gen(p, 'catches_opt')
-
-    def p_catches_opt2(self, p):
-        '''catches_opt : empty'''
-        self.gen(p, 'catches_opt')
-
-    def p_catch_clause(self, p):
-        '''catch_clause : CATCH '(' catch_formal_parameter ')' block'''
-        self.gen(p, 'catch_clause')
-
-    def p_catch_formal_parameter(self, p):
-        '''catch_formal_parameter : modifiers_opt catch_type variable_declarator_id'''
-        self.gen(p, 'catch_formal_parameter')
-
-    def p_catch_type(self, p):
-        '''catch_type : union_type'''
-        self.gen(p, 'catch_type')
-
-    def p_union_type(self, p):
-        '''union_type : type
-                      | union_type '|' type'''
-        self.gen(p, 'union_type')
-
-    def p_try_statement_with_resources(self, p):
-        '''try_statement_with_resources : TRY resource_specification try_block catches_opt
-                                        | TRY resource_specification try_block catches_opt finally'''
-        self.gen(p, 'try_statement_with_resources')
-
-    def p_resource_specification(self, p):
-        '''resource_specification : '(' resources semi_opt ')' '''
-        self.gen(p, 'resource_specification')
-
-    def p_semi_opt(self, p):
-        '''semi_opt : ';'
-                    | empty'''
-        self.gen(p, 'semi_opt')
-
-    def p_resources(self, p):
-        '''resources : resource
-                     | resources trailing_semicolon resource'''
-        self.gen(p, 'resources')
-
-    def p_trailing_semicolon(self, p):
-        '''trailing_semicolon : ';' '''
-        self.gen(p, 'trailing_semicolon')
-
-    def p_resource(self, p):
-        '''resource : type variable_declarator_id '=' variable_initializer'''
-        self.gen(p, 'resource')
-
-    def p_resource2(self, p):
-        '''resource : modifiers type variable_declarator_id '=' variable_initializer'''
-        self.gen(p, 'resource')
-
-    def p_finally(self, p):
-        '''finally : FINALLY block'''
-        self.gen(p, 'finally')
-
-    def p_explicit_constructor_invocation(self, p):
-        '''explicit_constructor_invocation : THIS '(' argument_list_opt ')' ';' '''
-        self.gen(p, 'explicit_constructor_invocation')
-
-    def p_explicit_constructor_invocation2(self, p):
-        '''explicit_constructor_invocation : primary '.' THIS '(' argument_list_opt ')' ';'
-                                           | name '.' THIS '(' argument_list_opt ')' ';' '''
-        self.gen(p, 'explicit_constructor_invocation')
 
     def p_class_instance_creation_expression(self, p):
         '''class_instance_creation_expression : NEW class_type '(' argument_list_opt ')' class_body_opt'''
@@ -919,7 +802,6 @@ class TypeParser(BaseParser):
                     | ABSTRACT
                     | FINAL
                     | NATIVE
-                    | SYNCHRONIZED
                     | TRANSIENT
                     | VOLATILE
                     | STRICTFP'''
@@ -1053,7 +935,7 @@ class ClassParser(BaseParser):
         self.endCurrScope()
 
     def p_constructor_header(self, p):
-        '''constructor_header : constructor_header_name formal_parameter_list_opt ')' method_header_throws_clause_opt'''
+        '''constructor_header : constructor_header_name formal_parameter_list_opt ')' '''
         self.gen(p, 'constructor_header')
         currScope = self.symTabStack[-1]
         currScope['size'] = 0
@@ -1122,24 +1004,6 @@ class ClassParser(BaseParser):
             # append in Parameter List
             currScope['parList'][varName] = currScope[varName]
 
-    def p_method_header_throws_clause_opt(self, p):
-        '''method_header_throws_clause_opt : method_header_throws_clause
-                                           | empty'''
-        self.gen(p, 'method_header_throws_clause_opt')
-
-    def p_method_header_throws_clause(self, p):
-        '''method_header_throws_clause : THROWS class_type_list'''
-        self.gen(p, 'method_header_throws_clause')
-
-    def p_class_type_list(self, p):
-        '''class_type_list : class_type_elt
-                           | class_type_list ',' class_type_elt'''
-        self.gen(p, 'class_type_list')
-
-    def p_class_type_elt(self, p):
-        '''class_type_elt : class_type'''
-        self.gen(p, 'class_type_elt')
-
     def p_method_body(self, p):
         '''method_body : '{' block_statements_opt '}' '''
         self.gen(p, 'method_body')
@@ -1155,7 +1019,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'abstract_method_declaration')
 
     def p_method_header(self, p):
-        '''method_header : method_header_name formal_parameter_list_opt ')' method_header_extended_dims method_header_throws_clause_opt'''
+        '''method_header : method_header_name formal_parameter_list_opt ')' method_header_extended_dims'''
         self.gen(p, 'method_header')
         currScope = self.symTabStack[-1]
         currScope['size'] = 0
