@@ -160,16 +160,17 @@ class BaseParser(object):
 
     def convertible(self, type1, type2):
         if type1 == 'reference' or type2 == 'reference' :
-            return 0
+            return None
         else:
             # TODO
             return 1
 
     def findVar(self, var):
-        toFind = 'var_' + var['astName']
+        toFind = 'var_' + var['name'][0]
         for scope in reversed(self.symTabStack):
             if scope.get(toFind):
-                var['type'] = scope[toFind]['type']
-                break
-        else:
-            print('Variable not defined {} at line #{}'.format(var['astName'], self.lexer.lineno))
+                # TODO recurse to the actual variable
+                return scope[toFind]
+
+        print('Variable not defined {} at line #{}'.format(var['astName'], self.lexer.lineno))
+        return None
