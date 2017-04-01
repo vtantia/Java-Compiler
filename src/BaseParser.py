@@ -1,4 +1,5 @@
 import pydot
+from OpRetType import matchType
 
 class BaseParser(object):
     def __init__(self):
@@ -57,13 +58,13 @@ class BaseParser(object):
         s = s.replace('\\t', 'tab')
         return s
 
-    def createNode(self, s, graph):
+    def createNode(self, s):
         s = self.replace_whitespaces(str(s))
         if '"' not in s:
             s = '"' + s + '"' # In order to avoid errors which pydot(graphviz) gives for comma, colon and some other symbols
         p = pydot.Node(str(self.ctr), label=s)
         self.ctr += 1
-        graph.add_node(p)
+        self.ast.add_node(p)
         return p
 
     def gen(self, p, name, index_ast = None):
@@ -73,19 +74,21 @@ class BaseParser(object):
             for i in useful:
                 if not isinstance(p[i], dict):
                     nodeName = p[i]
-                    p[i] = {}
-                    p[i]['astName'] = nodeName
-                    p[i]['astNode'] = self.createNode(nodeName, self.ast)
+                    p[i] = Node(nodeName, self.createNode(nodeName))
+                    # p[i] = {}
+                    # p[i]['astName'] = nodeName
+                    # p[i]['astNode'] = self.createNode(nodeName)
 
             if len(useful_wo_index) != 1:
                 if index_ast:
                     p[0] = p[index_ast]
                 else:
-                    p[0] = {}
-                    p[0]['astName'] = name
-                    p[0]['astNode'] = self.createNode(name, self.ast)
+                    p[i] = Node(name, self.createNode(name))
+                    # p[0] = {}
+                    # p[0]['astName'] = name
+                    # p[0]['astNode'] = self.createNode(name, self.ast)
                 for i in useful_wo_index:
-                    self.ast.add_edge(pydot.Edge(p[0]['astNode'], p[i]['astNode']))
+                    self.ast.add_edge(pydot.Edge(p[0].astNode, p[i].astNode))
             else:
                 p[0] = p[1]
 
@@ -136,37 +139,42 @@ class BaseParser(object):
             return 'reference', datatype + dim
 
     def checkTypeAssignment(self, LHS, RHS, name):
-        if LHS['type'] != RHS['type']:
-            if not self.convertible(RHS['type'], LHS['type']):
-                print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                print(LHS['type'], RHS['type'])
-                return 0
-            else:
-                RHS['type'] = LHS['type']
+        isMatch, finalType = matchType(LHS, RHS)
+
+        if isMatch == True:
+            return finalType
         else:
-            if (LHS['type'] == 'reference') and (RHS['type'] == 'reference'):
-                datatypeL, dimL = self.splitType(LHS['reference'])
-                datatypeR, dimR = self.splitType(RHS['reference'])
+            print(finalType, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+            return False
+
+        # if LHS['type'] != RHS['type']:
+            # if not self.convertible(RHS['type'], LHS['type']):
+                # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+                # print(LHS['type'], RHS['type'])
+                # return 0
+            # else:
+                # RHS['type'] = LHS['type']
+        # else:
+            # if (LHS['type'] == 'reference') and (RHS['type'] == 'reference'):
+                # datatypeL, dimL = self.splitType(LHS['reference'])
+                # datatypeR, dimR = self.splitType(RHS['reference'])
                 # Assuming arrays of primitive_type are not convertible even if unit variables are
-                if datatypeL != datatypeR and datatypeR != [0]:
-                    print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                    return 0
-                else:
-                    datatypeR = datatypeL
-                if len(dimL) != len(dimR):
-                    print('Dimensions do not match accross the assignment operator for \'{}\' at line #{}'.format(name, self.lexer.lineno))
-                    return 0
-        return 1
+                # if datatypeL != datatypeR and datatypeR != [0]:
+                    # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+                    # return 0
+                # else:
+                    # datatypeR = datatypeL
+                # if len(dimL) != len(dimR):
+                    # print('Dimensions do not match accross the assignment operator for \'{}\' at line #{}'.format(name, self.lexer.lineno))
+                    # return 0
+        # return 1
 
-    def convertible(self, type1, type2):
-        if type1 == 'reference' or type2 == 'reference' :
-            return None
+
+    def findVar(self, var, isString = False):
+        if isString:
+            toFind = var
         else:
-            # TODO
-            return 1
-
-    def findVar(self, var):
-        toFind = 'var_' + var['name'][0]
+            toFind = var['name'][0]
         for scope in reversed(self.symTabStack):
             if scope.get(toFind):
                 # TODO recurse to the actual variable

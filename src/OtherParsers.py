@@ -25,6 +25,7 @@ class ExpressionParser(BaseParser):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', self.binary(p))
         p[0]['type'], p[0]['reference'] = p[1]['type'], p[1]['reference']
+        # TODO: type checking
         #  if p[0]['astName'] == '=':
 
     def p_assignment_operator(self, p):
@@ -48,7 +49,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         p[0]['type'], p[0]['reference'] = 'boolean', []
@@ -60,8 +61,10 @@ class ExpressionParser(BaseParser):
         if p[3]['type'] == p[5]['type'] and p[3]['reference'] == p[5]['reference']:
             p[0]['type'], p[0]['reference'] = p[3]['type'], p[3]['reference']
         else:
-            newType = self.convertible(p[3], p[5])
-            if newType:
+            # TODO fix this
+            self.checkTypeAssignment(p[3], p[5])
+            isMatch, finalType = matchType(p[3], p[5])
+            if isMatch:
                 p[0]['type'] = newType
                 p[0]['reference'] = []
             else:
@@ -87,7 +90,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         p[0]['type'], p[0]['reference'] = 'boolean', []
@@ -129,7 +132,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         type1, type2 = p[1]['type'], p[3]['type']
@@ -190,7 +193,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         p[0]['type'], p[0]['reference'] = 'boolean', []
@@ -265,7 +268,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         type1, type2 = p[1]['type'], p[3]['type']
@@ -301,7 +304,7 @@ class ExpressionParser(BaseParser):
 
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         type1, type2 = p[1]['type'], p[3]['type']
@@ -439,7 +442,7 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'postfix_expression')
         if p[1]['astName'] == 'name':
             p[1]['astName'] = p[1]['name']
-            symTabEntry = findVar(p[1])
+            symTabEntry = self.findVar(p[1])
             p[1]['type'] = symTabEntry['type']
             p[1]['reference'] = symTabEntry['reference']
 
@@ -592,7 +595,7 @@ class StatementParser(BaseParser):
 
         # using a prefix 'var_' for all variables in symbol table
         lastTable = self.symTabStack[-1]
-        varName = 'var_' + p[1]['varName']
+        varName = p[1]['varName']
 
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
@@ -634,8 +637,7 @@ class StatementParser(BaseParser):
                                 | array_initializer'''
         self.gen(p, 'variable_initializer')
         if not p[1].get('type'):
-            # TODO
-            p[1]['type'] = 0
+            assert False
 
     def p_statement(self, p):
         '''statement : statement_without_trailing_substatement
@@ -696,6 +698,7 @@ class StatementParser(BaseParser):
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
         if len(p) == 2:
+            # Following evaluates to false if p[0]['reference'] is empty
             if not p[0].get('reference'):
                 p[0]['reference'] = [p[0]['type']]
                 p[0]['type'] = 'reference'
@@ -712,10 +715,19 @@ class StatementParser(BaseParser):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
+        func = self.findVar(p[1]['astName'], isString=True)
+        if func is None:
+            print('Not a valid function "{}" at line #{}'.format(p[1]['astName'], self.lexer.lineno))
+        elif func['parList'] 
+        else:
+            for idx in ['type', 'reference']:
+                p[0][idx] = func[idx]
+
     def p_method_invocation2(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
                              | primary '.' NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
+        # TODO
 
     def p_labeled_statement(self, p):
         '''labeled_statement : label ':' statement'''
@@ -1166,8 +1178,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'formal_parameter_list_opt')
 
     def p_formal_parameter_list(self, p):
-        '''formal_parameter_list : formal_parameter
-                                 | formal_parameter_list ',' formal_parameter'''
+        '''formal_parameter_list : formal_parameter | formal_parameter_list ',' formal_parameter'''
         self.gen(p, 'formal_parameter_list')
 
     def p_formal_parameter(self, p):
@@ -1179,11 +1190,11 @@ class ClassParser(BaseParser):
 
         currScope = self.symTabStack[-1]
         if not currScope.get('parList'):
-            currScope['parList'] = {}
+            currScope['parList'] = []
 
         # using a prefix 'var_' for all variables in symbol table
         vdid = p[3] if len(p) == 4 else p[4]
-        varName = 'var_' + vdid['varName']
+        varName = vdid['varName']
 
         p[0]['type'], p[0]['reference'] = self.resolveType(p[2], vdid)
 
@@ -1211,7 +1222,7 @@ class ClassParser(BaseParser):
             currScope[varName]['reference'] = p[0]['reference']
 
             # append in Parameter List
-            currScope['parList'][varName] = currScope[varName]
+            currScope['parList'].append(varName)
 
     def p_method_body(self, p):
         '''method_body : '{' block_statements_opt '}' '''
@@ -1239,6 +1250,8 @@ class ClassParser(BaseParser):
         self.startNewScope(name, 'method')
         currScope = self.symTabStack[-1]
         currScope['size'] = -8
+        currScope['type'] = p[2]['type']
+        currScope['reference'] = p[2]['reference']
         self.gen(p, 'method_header_name')
 
     def p_method_header_extended_dims(self, p):
