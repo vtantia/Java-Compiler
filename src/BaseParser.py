@@ -1,19 +1,12 @@
 import pydot
 from OpRetType import matchType
+from Node import primTypeSize
+from TypeChecking import TypeChecking
 
-class BaseParser(object):
+class BaseParser(TypeChecking):
     def __init__(self):
         self.gst = {}
-        type_size_tuples = [('boolean', 1),
-                            ('void', 0),
-                            ('byte', 1),
-                            ('short', 2),
-                            ('int', 4),
-                            ('long', 8),
-                            ('char', 1),
-                            ('float', 4),
-                            ('double', 8),
-                            ('array_type', 4)] # TODO fix size of array_type
+        type_size_tuples = primTypeSize + [('void', 0)]
         for datatype, size in type_size_tuples:
             self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
@@ -23,16 +16,6 @@ class BaseParser(object):
         self.ctr = 0
         self.currFile = ''
 
-        self.intsWoLong = ['byte', 'short', 'int', 'integer']
-        self.ints = self.intsWoLong + ['long']
-
-        self.decimals = ['float', 'double']
-
-        self.intsCharWoLong = self.intsWoLong + ['char']
-        self.intsChar = self.ints + ['char']
-
-        self.numsChar = self.intsChar + self.decimals
-        self.bitwise = self.intsChar + ['boolean']
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
@@ -107,12 +90,6 @@ class BaseParser(object):
             else:
                 print('\t'*count + key + '\t'*2 + str(table[key]))
 
-    def binary(self, p):
-        return 2 if len(p) == 4 else None
-
-    def unary(self, p):
-        return 1 if len(p) == 3 else None
-
     def splitType(self, typeList):
         if isinstance(typeList, list):
             for i in range(0, len(typeList)):
@@ -182,3 +159,9 @@ class BaseParser(object):
 
         print('Variable not defined {} at line #{}'.format(var['astName'], self.lexer.lineno))
         return None
+
+    def resolveScope(self, var):
+        if var['astName'] == 'name':
+            var['astName'] = var['name']
+            symTabEntry = self.findVar(var)
+            var['type'], var['reference'] = symTabEntry['type'], symTabEntry['reference']
