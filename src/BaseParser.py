@@ -1,11 +1,12 @@
 import pydot
 import Node
 from TypeChecking import TypeChecking
+from copy import deepcopy
 
 class BaseParser(TypeChecking):
     def __init__(self):
         self.gst = {}
-        typeSizeTups = primTypeSizeTups + [('void', 0)]
+        typeSizeTups = Node.primTypeSizeTups + [('void', 0)]
         for datatype, size in typeSizeTups:
             self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
@@ -56,7 +57,7 @@ class BaseParser(TypeChecking):
             for i in useful:
                 if not isinstance(p[i], Node.Node):
                     nodeName = p[i]
-                    p[i] = Node(nodeName, self.createNode(nodeName))
+                    p[i] = Node.Node(nodeName, self.createNode(nodeName))
                     # p[i] = {}
                     # p[i]['astName'] = nodeName
                     # p[i]['astNode'] = self.createNode(nodeName)
@@ -65,7 +66,7 @@ class BaseParser(TypeChecking):
                 if index_ast:
                     p[0] = p[index_ast]
                 else:
-                    p[i] = Node(name, self.createNode(name))
+                    p[0] = Node.Node(name, self.createNode(name))
                     # p[0] = {}
                     # p[0]['astName'] = name
                     # p[0]['astNode'] = self.createNode(name, self.ast)
@@ -134,7 +135,7 @@ class BaseParser(TypeChecking):
                 # TODO recurse to the actual variable
                 return scope[toFind]
 
-        print('Variable not defined {} at line #{}'.format(var['astName'], self.lexer.lineno))
+        print('Variable {} at line #{} not defined'.format(toFind, self.lexer.lineno))
         return None
 
     def resolveScope(self, var):

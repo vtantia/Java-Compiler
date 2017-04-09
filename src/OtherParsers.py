@@ -322,7 +322,7 @@ class ExpressionParser(BaseParser):
                                 | method_invocation
                                 | array_access'''
         self.gen(p, 'primary_no_new_array')
-        if p[0]['astName'] == 'this':
+        if p[0].astName == 'this':
             pass
             # TODO
 
@@ -433,7 +433,7 @@ class StatementParser(BaseParser):
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
         if lastTable.get(varName):
-            print('Variable \'{}\' at line # {} already defined in the same scope at line # {}'.format(p[1]['varName'], self.lexer.lineno, lastTable[varName]['lineNo']))
+            print('Variable \'{}\' at line # {} already defined in the same scope at line # {}'.format(varName, self.lexer.lineno, lastTable[varName]['lineNo']))
         else:
             lastTable[varName] = {}
             lastTable[varName]['type'] = p[0].nodeType
@@ -442,9 +442,9 @@ class StatementParser(BaseParser):
             # If a primitive data type, then get size from the GST
             # else allocate on heap and store pointer
             lastTable[varName]['size'] = 4
-            if self.gst.get(p[0]['type'].baseType):
-                if self.gst[p[0]['type'].baseType]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = self.gst[p[0]['type'].baseType]['size']
+            if self.gst.get(p[0].nodeType.baseType):
+                if self.gst[p[0].nodeType.baseType]['desc'] == 'primitive_type':
+                    lastTable[varName]['size'] = self.gst[p[0].nodeType.baseType]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
@@ -564,10 +564,12 @@ class StatementParser(BaseParser):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
-        func = self.findVar(p[1]['astName'], isString=True)
+        func = self.findVar(p[1].astName, isString=True)
         if func is None:
-            print('Not a valid function "{}" at line #{}'.format(p[1]['astName'], self.lexer.lineno))
+            print('Not a valid function "{}" at line #{}'.format(p[1].astName, self.lexer.lineno))
         elif func['parList']:
+            #TODO
+            pass
         else:
             for idx in ['type', 'reference']:
                 p[0][idx] = func[idx]
@@ -820,7 +822,7 @@ class LiteralParser(BaseParser):
     def p_literal(self, p):
         '''literal : NUM'''
         self.gen(p, 'literal')
-        litType = self.find_type(p[0]['astName'])
+        litType = self.find_type(p[0].astName)
         if litType == 'error':
             print('Not a matching type at line #{}'.format(self.lexer.lineno))
         p[0].nodeType.baseType = litType
@@ -917,14 +919,14 @@ class TypeParser(BaseParser):
         self.gen(p, 'class_type')
 
     def p_class_or_interface(self, p):
-        '''class_or_interface : simple_name'''
+        '''class_or_interface : name'''
         self.gen(p, 'class_or_interface')
         p[0].nodeType.baseType = p[0].qualName[0]
         #  p[0]['type'] = p[0]['name']
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
-                      | simple_name dims'''
+                      | name dims'''
         self.gen(p, 'array_type')
         p[0].nodeType.baseType = p[1].astName
         p[0].nodeType.dim = p[2].nodeType.dim
@@ -1038,7 +1040,8 @@ class ClassParser(BaseParser):
         self.gen(p, 'formal_parameter_list_opt')
 
     def p_formal_parameter_list(self, p):
-        '''formal_parameter_list : formal_parameter | formal_parameter_list ',' formal_parameter'''
+        '''formal_parameter_list : formal_parameter
+                                 | formal_parameter_list ',' formal_parameter'''
         self.gen(p, 'formal_parameter_list')
 
     def p_formal_parameter(self, p):
@@ -1071,9 +1074,9 @@ class ClassParser(BaseParser):
             # Alloting at-least 4 bytes to all variables passed to this function
             # TODO fix this.
             currScope[varName]['size'] = 4
-            if self.gst.get(p[0]['type'].baseType):
-                if self.gst[p[0]['type'].baseType]['desc'] == 'primitive_type':
-                    currScope[varName]['size'] = max(4, self.gst[[p[0]['type'].baseType]]['size'])
+            if self.gst.get(p[0].nodeType.baseType):
+                if self.gst[p[0].nodeType.baseType]['desc'] == 'primitive_type':
+                    currScope[varName]['size'] = max(4, self.gst[p[0].nodeType.baseType]['size'])
 
             # set offset for new variable(s) and update the offset value in symbol table
             # Negative offset, as according to function stack
