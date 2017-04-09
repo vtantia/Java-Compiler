@@ -2,6 +2,7 @@ from BaseParser import BaseParser
 import re
 from Node import Type
 import TypeChecking
+from copy import deepcopy
 
 class ExpressionParser(BaseParser):
 
@@ -410,7 +411,7 @@ class StatementParser(BaseParser):
         '''variable_declarators : variable_declarator
                                 | variable_declarators ',' variable_declarator'''
         self.gen(p, 'variable_declarators')
-        p[0]['type'] = p[1]['type']
+        p[0].nodeType = deepcopy(p[1].nodeType)
 
     def p_variable_declarator(self, p):
         '''variable_declarator : variable_declarator_id
@@ -419,7 +420,7 @@ class StatementParser(BaseParser):
 
         # if first declaration then no comma else a comma exists
         typeSource = p[-2] if p[-1] is ',' else p[-1]
-        p[0]['type'] = typeSource['type']
+        p[0].nodeType = deepcopy(typeSource.nodeType)
 
         # Only one among the typeSource and variable_declarator_id should
         # have dimension information
@@ -892,13 +893,13 @@ class TypeParser(BaseParser):
         self.gen(p, 'class_type')
 
     def p_class_or_interface(self, p):
-        '''class_or_interface : name'''
+        '''class_or_interface : simple_name'''
         self.gen(p, 'class_or_interface')
         p[0]['type'] = p[0]['name']
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
-                      | name dims'''
+                      | simple_name dims'''
         self.gen(p, 'array_type')
         if p[1]['astName'] == 'name':
             p[0]['type'] = p[1]['name']

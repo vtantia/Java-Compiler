@@ -1,13 +1,13 @@
 import pydot
-from OpRetType import matchType
-from Node import primTypeSize
+import OpRetType
+from Node import primTypeSizeTups
 from TypeChecking import TypeChecking
 
 class BaseParser(TypeChecking):
     def __init__(self):
         self.gst = {}
-        type_size_tuples = primTypeSize + [('void', 0)]
-        for datatype, size in type_size_tuples:
+        typeSizeTups = primTypeSizeTups + [('void', 0)]
+        for datatype, size in typeSizeTups:
             self.gst[datatype] = {'size': size, 'desc': 'primitive_type'}
         self.gst['desc'] = 'GLOBAL TABLE'
 
@@ -114,38 +114,6 @@ class BaseParser(TypeChecking):
             return varType['type'], varType.get('reference')
         else:
             return 'reference', datatype + dim
-
-    def checkTypeAssignment(self, LHS, RHS, name):
-        isMatch, finalType = matchType(LHS, RHS)
-
-        if isMatch == True:
-            return finalType
-        else:
-            print(finalType, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-            return False
-
-        # if LHS['type'] != RHS['type']:
-            # if not self.convertible(RHS['type'], LHS['type']):
-                # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                # print(LHS['type'], RHS['type'])
-                # return 0
-            # else:
-                # RHS['type'] = LHS['type']
-        # else:
-            # if (LHS['type'] == 'reference') and (RHS['type'] == 'reference'):
-                # datatypeL, dimL = self.splitType(LHS['reference'])
-                # datatypeR, dimR = self.splitType(RHS['reference'])
-                # Assuming arrays of primitive_type are not convertible even if unit variables are
-                # if datatypeL != datatypeR and datatypeR != [0]:
-                    # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                    # return 0
-                # else:
-                    # datatypeR = datatypeL
-                # if len(dimL) != len(dimR):
-                    # print('Dimensions do not match accross the assignment operator for \'{}\' at line #{}'.format(name, self.lexer.lineno))
-                    # return 0
-        # return 1
-
 
     def findVar(self, var, isString = False):
         if isString:
