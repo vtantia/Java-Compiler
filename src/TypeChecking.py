@@ -17,21 +17,24 @@ class TypeChecking(object):
         if len(p) == 2:
             return
 
-        p[0]['type'], p[0]['reference'] = 'boolean', []
+        p[0].nodeType = Node.Type(baseType='boolean')
+        #  p[0]['type'], p[0]['reference'] = 'boolean', []
 
-        if p[1]['type'] != 'boolean':
-            print('Incompatible type on line #{}: {} {} can\'t be converted \
-                    to boolean'.format(self.lexer.lineno, p[1]['type'], p[1]['reference']))
+        if p[1].nodeType.baseType != 'boolean':
+            print('Incompatible type on line #{}: {}{} can\'t be converted \
+                    to boolean'.format(self.lexer.lineno, p[1].nodeType.baseType, p[1].nodeType.dim))
 
-        if p[3]['type'] == p[5]['type'] and p[3]['reference'] == p[5]['reference']:
-            p[0]['type'], p[0]['reference'] = p[3]['type'], p[3]['reference']
+        if p[3].nodeType.baseType == p[5].nodeType.baseType and \
+            p[3].nodeType.dim == p[5].nodeType.dim:
+            p[0].nodeType = deepcopy(p[3].nodeType)
+            #  p[0]['type'], p[0]['reference'] = p[3]['type'], p[3]['reference']
         else:
             # TODO fix this
             newType = self.checkTypeAssignment(p[3], p[5])
             if newType:
-                p[0].nodeType = Type(isPrim = baseType = newType)
-                p[0]['type'] = newType
-                p[0]['reference'] = []
+                p[0].nodeType = Type(baseType=newType)
+                #  p[0]['type'] = newType
+                #  p[0]['reference'] = []
             else:
                 print('Not matching types for conditional expression at line #{}'.format(
                     self.lexer.lineno))
@@ -41,12 +44,8 @@ class TypeChecking(object):
         if len(p) == 2:
             return
 
-        if p[1]['astName'] == 'name':
-            p[1]['astName'] = p[1]['name']
-            symTabEntry = self.findVar(p[1])
-            p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
-
-        p[0]['type'], p[0]['reference'] = 'boolean', []
+        #  p[0]['type'], p[0]['reference'] = 'boolean', []
+        p[0].nodeType = Node.Type(baseType='boolean')
 
         type1, type2 = p[1]['type'], p[3]['type']
         if type1 != 'boolean' and type2 != 'boolean':
@@ -57,11 +56,6 @@ class TypeChecking(object):
     def binary_exp_bitwise(p):
         if len(p) == 2:
             return
-
-        if p[1]['astName'] == 'name':
-            p[1]['astName'] = p[1]['name']
-            symTabEntry = self.findVar(p[1])
-            p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         type1, type2 = p[1]['type'], p[3]['type']
         if type1 == 'boolean' and type2 == 'boolean':
@@ -79,11 +73,6 @@ class TypeChecking(object):
     def binary_exp_rel(p):
         if len(p) == 2:
             return
-
-        if p[1]['astName'] == 'name':
-            p[1]['astName'] = p[1]['name']
-            symTabEntry = self.findVar(p[1])
-            p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         p[0]['type'], p[0]['reference'] = 'boolean', []
 
@@ -106,11 +95,6 @@ class TypeChecking(object):
         if len(p) == 2:
             return
 
-        if p[1]['astName'] == 'name':
-            p[1]['astName'] = p[1]['name']
-            symTabEntry = self.findVar(p[1])
-            p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
-
         type1, type2 = p[1]['type'], p[3]['type']
         if type1 in self.intsChar and type2 in self.intsChar:
             p[0]['type'] = 'long' if (type1 == 'long' or type2 == 'long') else 'int'
@@ -122,11 +106,6 @@ class TypeChecking(object):
     def binary_exp_addmult(p):
         if len(p) == 2:
             return
-
-        if p[1]['astName'] == 'name':
-            p[1]['astName'] = p[1]['name']
-            symTabEntry = self.findVar(p[1])
-            p[1]['type'], p[1]['reference'] = symTabEntry['type'], symTabEntry['reference']
 
         type1, type2 = p[1]['type'], p[3]['type']
         if p[0]['astName'] != '%':
@@ -194,28 +173,6 @@ class TypeChecking(object):
         else:
             print(finalType, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
             return False
-
-        # if LHS['type'] != RHS['type']:
-            # if not self.convertible(RHS['type'], LHS['type']):
-                # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                # print(LHS['type'], RHS['type'])
-                # return 0
-            # else:
-                # RHS['type'] = LHS['type']
-        # else:
-            # if (LHS['type'] == 'reference') and (RHS['type'] == 'reference'):
-                # datatypeL, dimL = self.splitType(LHS['reference'])
-                # datatypeR, dimR = self.splitType(RHS['reference'])
-                # Assuming arrays of primitive_type are not convertible even if unit variables are
-                # if datatypeL != datatypeR and datatypeR != [0]:
-                    # print('Type mismatch at assignment operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-                    # return 0
-                # else:
-                    # datatypeR = datatypeL
-                # if len(dimL) != len(dimR):
-                    # print('Dimensions do not match accross the assignment operator for \'{}\' at line #{}'.format(name, self.lexer.lineno))
-                    # return 0
-        # return 1
 
     # Check if type of b can be converted to type of a
     def convertible(a, b):

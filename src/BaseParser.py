@@ -128,7 +128,7 @@ class BaseParser(TypeChecking):
         if isString:
             toFind = var
         else:
-            toFind = var['name'][0]
+            toFind = var.qualName[0]
         for scope in reversed(self.symTabStack):
             if scope.get(toFind):
                 # TODO recurse to the actual variable
@@ -138,7 +138,7 @@ class BaseParser(TypeChecking):
         return None
 
     def resolveScope(self, var):
-        if var['astName'] == 'name':
-            var['astName'] = var['name']
+        if var.astName == 'name':
+            var.astName = var.qualName[0]
             symTabEntry = self.findVar(var)
-            var['type'], var['reference'] = symTabEntry['type'], symTabEntry['reference']
+            var.nodeType = symTabEntry['type']
