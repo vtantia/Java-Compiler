@@ -1,6 +1,5 @@
 import pydot
-import OpRetType
-from Node import primTypeSizeTups
+import Node
 from TypeChecking import TypeChecking
 
 class BaseParser(TypeChecking):
@@ -55,7 +54,7 @@ class BaseParser(TypeChecking):
         useful = useful_wo_index + [index_ast] if index_ast else useful_wo_index
         if useful:
             for i in useful:
-                if not isinstance(p[i], dict):
+                if not isinstance(p[i], Node.Node):
                     nodeName = p[i]
                     p[i] = Node(nodeName, self.createNode(nodeName))
                     # p[i] = {}
@@ -98,22 +97,32 @@ class BaseParser(TypeChecking):
         return typeList, []
 
     def resolveType(self, varType, varName):
-        if varType['type'] == 'reference':
-            datatype, dim = self.splitType(varType['reference'])
-        else:
-            datatype = [varType['type']]
-            dim = None
-
-        if dim and varName.get('dim'):
+        t1 = varType.nodeType
+        t2 = varName.nodeType
+        if t1.dim and t2.dim:
             print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
-        else:
-            dim = varName.get('dim')
 
-        # return in the format basetype(primitive or reference), referred type(if base is not primitive), dimensions
-        if not dim:
-            return varType['type'], varType.get('reference')
-        else:
-            return 'reference', datatype + dim
+        typeParent = deepcopy(varType.nodeType)
+        if not t1.dim:
+            typeParent.dim = t2.dim
+
+        return typeParent
+        #  if varType['type'] == 'reference':
+            #  datatype, dim = self.splitType(varType['reference'])
+        #  else:
+            #  datatype = [varType['type']]
+            #  dim = None
+
+        #  if dim and varName.get('dim'):
+            #  print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
+        #  else:
+            #  dim = varName.get('dim')
+
+        #  # return in the format basetype(primitive or reference), referred type(if base is not primitive), dimensions
+        #  if not dim:
+            #  return varType['type'], varType.get('reference')
+        #  else:
+            #  return 'reference', datatype + dim
 
     def findVar(self, var, isString = False):
         if isString:

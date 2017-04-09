@@ -1,7 +1,5 @@
 from BaseParser import BaseParser
 import re
-from Node import Type
-import TypeChecking
 from copy import deepcopy
 
 class ExpressionParser(BaseParser):
@@ -27,7 +25,8 @@ class ExpressionParser(BaseParser):
     def p_assignment(self, p):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', TypeChecking.binary(p))
-        p[0]['type'], p[0]['reference'] = p[1]['type'], p[1]['reference']
+        p[0].nodeType = p[1].nodeType
+        #  p[0]['type'], p[0]['reference'] = p[1]['type'], p[1]['reference']
         # TODO: type checking
         #  if p[0]['astName'] == '=':
 
@@ -332,8 +331,7 @@ class ExpressionParser(BaseParser):
                                 | '(' expression_not_name ')' '''
         self.gen(p, 'primary_no_new_array')
         self.resolveScope(p[2])
-        
-        p[0]['type'], p[0]['reference'] = p[2]['type'], p[2]['reference']
+        P[0].nodeType = p[2].nodeType
 
     def p_dims_opt(self, p):
         '''dims_opt : dims'''
@@ -351,14 +349,17 @@ class ExpressionParser(BaseParser):
         '''dims_loop : one_dim_loop
                      | dims_loop one_dim_loop'''
         self.gen(p, 'dims_loop')
-        p[0]['dim'] = p[1]['dim']
         if len(p) == 3:
-            p[0]['dim'] += p[2]['dim']
+            p[0].nodeType.dim = p[1].nodeType.dim + p[2].nodeType.dim
+        #  p[0]['dim'] = p[1]['dim']
+        #  if len(p) == 3:
+            #  p[0]['dim'] += p[2]['dim']
 
     def p_one_dim_loop(self, p):
         '''one_dim_loop : '[' ']' '''
         self.gen(p, 'one_dim_loop')
-        p[0]['dim'] = [0]
+        p[0].nodeType.dim = [0]
+        #  p[0]['dim'] = [0]
 
     def p_cast_expression(self, p):
         '''cast_expression : '(' primitive_type dims_opt ')' unary_expression'''
@@ -420,15 +421,14 @@ class StatementParser(BaseParser):
 
         # if first declaration then no comma else a comma exists
         typeSource = p[-2] if p[-1] is ',' else p[-1]
-        p[0].nodeType = deepcopy(typeSource.nodeType)
+        lastTable = self.symTabStack[-1]
+        varName = p[1].qualName[0]
 
         # Only one among the typeSource and variable_declarator_id should
         # have dimension information
-        p[0]['type'], p[0]['reference'] = self.resolveType(typeSource, p[1])
+        p[0].nodeType = self.resolveType(typeSource, p[1])
 
-        # using a prefix 'var_' for all variables in symbol table
-        lastTable = self.symTabStack[-1]
-        varName = p[1]['varName']
+        p[0].qualName = varName
 
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
@@ -436,41 +436,45 @@ class StatementParser(BaseParser):
             print('Variable \'{}\' at line # {} already defined in the same scope at line # {}'.format(p[1]['varName'], self.lexer.lineno, lastTable[varName]['lineNo']))
         else:
             lastTable[varName] = {}
-            lastTable[varName]['type'] = p[0]['type']
+            lastTable[varName]['type'] = p[0].nodeType
             lastTable[varName]['lineNo'] = self.lexer.lineno
 
             # If a primitive data type, then get size from the GST
             # else allocate on heap and store pointer
             lastTable[varName]['size'] = 4
-            if self.gst.get(p[0]['type']):
-                if self.gst[p[0]['type']]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = self.gst[p[0]['type']]['size']
+            if self.gst.get(p[0]['type'].baseType):
+                if self.gst[p[0]['type'].baseType]['desc'] == 'primitive_type':
+                    lastTable[varName]['size'] = self.gst[p[0]['type'].baseType]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
             lastTable['size'] = lastTable[varName]['offset']
 
             if len(p) == 4:
-                if self.checkTypeAssignment(p[0], p[3], varName):
-                    # reverse the dimensions
-                    reference, dim = self.splitType(p[0]['reference'])
-                    p[0]['reference'] = reference + dim[::-1] if isinstance(reference, list) else [reference] + dim[::-1]
+                self.checkTypeAssignment(p[0], p[3], varName)
+                #  if self.checkTypeAssignment(p[0], p[3], varName):
+                    #  # reverse the dimensions
+                    #  reference, dim = self.splitType(p[0]['reference'])
+                    #  p[0]['reference'] = reference + dim[::-1] if isinstance(reference, list) else [reference] + dim[::-1]
 
-            lastTable[varName]['reference'] = p[0]['reference']
+            #  lastTable[varName]['reference'] = p[0]['reference']
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
         self.gen(p, 'variable_declarator_id')
-        p[0]['varName'] = p[1]['astName']
+        p[0].qualName = [p[1].astName]
         if p[2]:
-            p[0]['dim'] = p[2]['dim']
+            p[0].nodeType.dim = p[2].nodeType.dim
+        #  p[0]['varName'] = p[1]['astName']
+        #  if p[2]:
+            #  p[0]['dim'] = p[2]['dim']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
                                 | array_initializer'''
         self.gen(p, 'variable_initializer')
-        if not p[1].get('type'):
-            assert False
+        #  if not p[1].get('type'):
+            #  assert False
 
     def p_statement(self, p):
         '''statement : statement_without_trailing_substatement
@@ -515,34 +519,46 @@ class StatementParser(BaseParser):
     def p_array_initializer(self, p):
         '''array_initializer : '{' comma_opt '}' '''
         self.gen(p, 'array_initializer')
-        # unknown data type and zero length of array
-        p[0]['type'] = 'reference'
-        p[0]['reference'] = [0, 0]
+        p[0].nodeType.baseType = 'void'
+        p[0].nodeType.dim = [0]
+        #  unknown data type and zero length of array
+        #  p[0]['type'] = 'reference'
+        #  p[0]['reference'] = [0, 0]
 
     def p_array_initializer2(self, p):
         '''array_initializer : '{' variable_initializers '}'
                              | '{' variable_initializers ',' '}' '''
         self.gen(p, 'array_initializer')
-        p[0]['type'] = p[2]['type']
-        p[0]['reference'] = p[2]['reference']
+        p[0].nodeType = deepcopy(p[2].nodeType)
+        #  p[0]['type'] = p[2]['type']
+        #  p[0]['reference'] = p[2]['reference']
 
     def p_variable_initializers(self, p):
         '''variable_initializers : variable_initializer
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
         if len(p) == 2:
-            # Following evaluates to false if p[0]['reference'] is empty
-            if not p[0].get('reference'):
-                p[0]['reference'] = [p[0]['type']]
-                p[0]['type'] = 'reference'
-            p[0]['reference'].append(1)
+            p[0].nodeType.dim = [1] + p[0].nodeType.dim
         else:
-            # the following condition also ensures that the data type is same
-            if p[1]['reference'][0:-1] == p[3]['reference']:
-                p[0]['reference'] = p[1]['reference']
-                p[0]['reference'][-1] += 1
+            if p[1].nodeType.dim[1:] == p[3].nodeType.dim
+                p[0].nodeType.dim = deepcopy(p[1].nodeType.dim)
+                p[0].nodeType.dim[0] += 1
             else:
                 print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
+
+        #  if len(p) == 2:
+            #  # Following evaluates to false if p[0]['reference'] is empty
+            #  if not p[0].get('reference'):
+                #  p[0]['reference'] = [p[0]['type']]
+                #  p[0]['type'] = 'reference'
+            #  p[0]['reference'].append(1)
+        #  else:
+            #  # the following condition also ensures that the data type is same
+            #  if p[1]['reference'][0:-1] == p[3]['reference']:
+                #  p[0]['reference'] = p[1]['reference']
+                #  p[0]['reference'][-1] += 1
+            #  else:
+                #  print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
 
     def p_method_invocation(self, p):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
@@ -551,7 +567,7 @@ class StatementParser(BaseParser):
         func = self.findVar(p[1]['astName'], isString=True)
         if func is None:
             print('Not a valid function "{}" at line #{}'.format(p[1]['astName'], self.lexer.lineno))
-        elif func['parList'] 
+        elif func['parList']
         else:
             for idx in ['type', 'reference']:
                 p[0][idx] = func[idx]
@@ -771,17 +787,18 @@ class NameParser(BaseParser):
         '''name : simple_name
                 | qualified_name'''
         self.gen(p, 'name')
-        p[0]['astName'] = 'name'
 
     def p_simple_name(self, p):
         '''simple_name : NAME'''
         self.gen(p, 'simple_name')
-        p[0]['name'] = [p[0]['astName']]
+        p[0].qualName = [p[0].astName]
+        #  p[0]['name'] = [p[0]['astName']]
 
     def p_qualified_name(self, p):
         '''qualified_name : name '.' simple_name'''
         self.gen(p, 'qualified_name')
-        p[0]['name'] = p[1]['name'] + p[3]['name']
+        p[0].qualName = p[1].qualName + p[3].qualName
+        #  p[0]['name'] = p[1]['name'] + p[3]['name']
 
 class LiteralParser(BaseParser):
 
@@ -802,30 +819,35 @@ class LiteralParser(BaseParser):
     def p_literal(self, p):
         '''literal : NUM'''
         self.gen(p, 'literal')
-        p[0]['type'], p[0]['reference'] = self.find_type(p[0]['astName']), []
-        if p[0]['type'] == 'error':
+        litType = self.find_type(p[0]['astName'])
+        if litType == 'error':
             print('Not a matching type at line #{}'.format(self.lexer.lineno))
+        p[0].nodeType.baseType = litType
 
     def p_literal1(self, p):
         '''literal : CHAR_LITERAL'''
         self.gen(p, 'literal')
-        p[0]['type'], p[0]['reference'] = 'char', []
+        #  p[0]['type'], p[0]['reference'] = 'char', []
+        p[0].nodeType.baseType = 'char'
 
     def p_literal2(self, p):
         '''literal : STRING_LITERAL'''
         self.gen(p, 'literal')
-        p[0]['type'], p[0]['reference'] = 'String', []
+        #  p[0]['type'], p[0]['reference'] = 'String', []
+        p[0].nodeType.baseType = 'String'
 
     def p_literal3(self, p):
         '''literal : TRUE
                    | FALSE'''
         self.gen(p, 'literal')
-        p[0]['type'], p[0]['reference'] = 'boolean', []
+        #  p[0]['type'], p[0]['reference'] = 'boolean', []
+        p[0].nodeType.baseType = 'boolean'
 
     def p_literal4(self, p):
         '''literal : NULL'''
         self.gen(p, 'literal')
-        p[0]['type'], p[0]['reference'] = 'null', []
+        #  p[0]['type'], p[0]['reference'] = 'null', []
+        p[0].nodeType.baseType = 'null'
 
 class TypeParser(BaseParser):
 
@@ -859,11 +881,11 @@ class TypeParser(BaseParser):
         '''type : primitive_type
                 | reference_type'''
         self.gen(p, 'type')
-        if p[0]['type'] !=  'primitive_type':
-            p[0]['reference'] = p[0]['type']
-            p[0]['type'] = 'reference'
-        else:
-            p[0]['type'] = p[0]['astName']
+        #  if p[0]['type'] !=  'primitive_type':
+            #  p[0]['reference'] = p[0]['type']
+            #  p[0]['type'] = 'reference'
+        #  else:
+            #  p[0]['type'] = p[0]['astName']
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -876,7 +898,8 @@ class TypeParser(BaseParser):
                           | FLOAT
                           | DOUBLE'''
         self.gen(p, 'primitive_type')
-        p[0]['type'] = 'primitive_type'
+        p[0].nodeType.baseType = p[0].astName
+        #  p[0]['type'] = 'primitive_type'
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
@@ -895,20 +918,23 @@ class TypeParser(BaseParser):
     def p_class_or_interface(self, p):
         '''class_or_interface : simple_name'''
         self.gen(p, 'class_or_interface')
-        p[0]['type'] = p[0]['name']
+        p[0].nodeType.baseType = p[0].qualName[0]
+        #  p[0]['type'] = p[0]['name']
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
                       | simple_name dims'''
         self.gen(p, 'array_type')
-        if p[1]['astName'] == 'name':
-            p[0]['type'] = p[1]['name']
-        elif p[1]['type'] == 'primitive_type':
-            p[0]['type'] = [p[0]['astName']]
-        else:
-            print('Parsing Error at line #{}'.format(self.lexer.lineno))
+        p[0].nodeType.baseType = p[1].astName
+        p[0].nodeType.dim = p[2].nodeType.dim
+        #  if p[1]['astName'] == 'name':
+            #  p[0]['type'] = p[1]['name']
+        #  elif p[1]['type'] == 'primitive_type':
+            #  p[0]['type'] = [p[0]['astName']]
+        #  else:
+            #  print('Parsing Error at line #{}'.format(self.lexer.lineno))
 
-        p[0]['type'] += p[2]['dim']
+        #  p[0]['type'] += p[2]['dim']
 
 class ClassParser(BaseParser):
 
@@ -1027,32 +1053,31 @@ class ClassParser(BaseParser):
 
         # using a prefix 'var_' for all variables in symbol table
         vdid = p[3] if len(p) == 4 else p[4]
-        varName = vdid['varName']
+        varName = vdid.qualName[0]
 
-        p[0]['type'], p[0]['reference'] = self.resolveType(p[2], vdid)
+        p[0].nodeType = self.resolveType(p[2], vdid)
+        p[0].qualName = varName
 
         # Check if already declared
         # If declared, then print an error and continue, else add to symbol table
         if currScope.get(varName):
-            print('Function Parameter \'{}\' at line #{} already defined in the same parameter list'.format(vdid['varName'], self.lexer.lineno))
+            print('Function Parameter \'{}\' at line #{} already defined in the same parameter list'.format(varName, self.lexer.lineno))
         else:
             currScope[varName] = {}
-            currScope[varName]['type'] = p[0]['type']
+            currScope[varName]['type'] = p[0].nodeType
             currScope[varName]['lineNo'] = self.lexer.lineno
 
             # Alloting at-least 4 bytes to all variables passed to this function
             # TODO fix this.
             currScope[varName]['size'] = 4
-            if self.gst.get(p[2]['astName']):
-                if self.gst[p[2]['astName']]['desc'] == 'primitive_type':
-                    currScope[varName]['size'] = max(4, self.gst[p[2]['astName']]['size'])
+            if self.gst.get(p[0]['type'].baseType):
+                if self.gst[p[0]['type'].baseType]['desc'] == 'primitive_type':
+                    currScope[varName]['size'] = max(4, self.gst[[p[0]['type'].baseType]]['size'])
 
             # set offset for new variable(s) and update the offset value in symbol table
             # Negative offset, as according to function stack
             currScope[varName]['offset'] = currScope['size']
             currScope['size'] = currScope[varName]['offset'] - currScope[varName]['size']
-
-            currScope[varName]['reference'] = p[0]['reference']
 
             # append in Parameter List
             currScope['parList'].append(varName)
@@ -1083,8 +1108,7 @@ class ClassParser(BaseParser):
         self.startNewScope(name, 'method')
         currScope = self.symTabStack[-1]
         currScope['size'] = -8
-        currScope['type'] = p[2]['type']
-        currScope['reference'] = p[2]['reference']
+        currScope['type'] = p[2].nodeType
         self.gen(p, 'method_header_name')
 
     def p_method_header_extended_dims(self, p):

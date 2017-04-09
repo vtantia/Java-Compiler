@@ -222,7 +222,7 @@ class TypeChecking(object):
         assert type(a) is Node.Type and type(b) is Node.Type
 
         if a.isPrim and b.isPrim:
-            if b.baseType == 'integer': # Integer can be converted to anything. It is a 
+            if b.baseType == 'integer': # Integer can be converted to anything. It is a
                                         # placeholder when the type is not known
                 return True # convert(b, a.baseType)
             if b.baseType == 'char' and numsChar.index(a.baseType) >= numsChar.index('int'):
@@ -240,7 +240,7 @@ class TypeChecking(object):
         return arr.count(0) == len(arr)
 
     def matchType(a, b, assign = True):
-        assert type(a) is Node.Node and type(b) is Node
+        assert type(a) is Node.Node and type(b) is Node.Node
 
         a = a.nodeType
         b = b.nodeType

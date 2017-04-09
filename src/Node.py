@@ -10,10 +10,6 @@ class Type(object):
     def isPrim(self):
         return self.dim == [] and any([self.baseType == type for type, _ in primTypeSizeTups])
 
-    def copy(type2):
-        type1 = self.type
-        type2.baseType, type2.dim, type2.prim = type1.baseType, type1.dim, type1.prim
-
 class Node(object):
     def __init__(self, astName, astNode, nodeType = Type(), qualName = []):
         self.astName = astName
