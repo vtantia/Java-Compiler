@@ -26,8 +26,7 @@ class ExpressionParser(BaseParser):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', self.binary(p))
         p[0].nodeType = deepcopy(p[1].nodeType)
-        # TODO: type checking
-        #  if p[0]['astName'] == '=':
+        self.assign(self.mapping[p[2].astName], p)
 
     def p_assignment_operator(self, p):
         '''assignment_operator : '='
@@ -387,8 +386,7 @@ class StatementParser(BaseParser):
 
     def p_block_statement(self, p):
         '''block_statement : local_variable_declaration_statement
-                           | statement
-                           | class_declaration'''
+                           | statement '''
         self.gen(p, 'block_statement')
 
     def p_local_variable_declaration_statement(self, p):
@@ -446,13 +444,7 @@ class StatementParser(BaseParser):
             lastTable['size'] = lastTable[varName]['offset']
 
             if len(p) == 4:
-                self.checkTypeAssignment(p[0], p[3], varName)
-                #  if self.checkTypeAssignment(p[0], p[3], varName):
-                    #  # reverse the dimensions
-                    #  reference, dim = self.splitType(p[0]['reference'])
-                    #  p[0]['reference'] = reference + dim[::-1] if isinstance(reference, list) else [reference] + dim[::-1]
-
-            #  lastTable[varName]['reference'] = p[0]['reference']
+                self.checkTypeAssignment(p[0], p[3])
 
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
@@ -525,7 +517,6 @@ class StatementParser(BaseParser):
         '''variable_initializers : variable_initializer
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
-# TODO: explain more clearly
         if len(p) == 2:
             p[0].nodeType.dim = [1] + p[0].nodeType.dim
         else:
@@ -535,25 +526,11 @@ class StatementParser(BaseParser):
             else:
                 print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
 
-        #  if len(p) == 2:
-            #  # Following evaluates to false if p[0]['reference'] is empty
-            #  if not p[0].get('reference'):
-                #  p[0]['reference'] = [p[0]['type']]
-                #  p[0]['type'] = 'reference'
-            #  p[0]['reference'].append(1)
-        #  else:
-            #  # the following condition also ensures that the data type is same
-            #  if p[1]['reference'][0:-1] == p[3]['reference']:
-                #  p[0]['reference'] = p[1]['reference']
-                #  p[0]['reference'][-1] += 1
-            #  else:
-                #  print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
-
     def p_method_invocation(self, p):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
-        func = self.findVar(p[1].astName, isString=True)
+        func = self.findVar([p[1].astName])
         if func is None:
             print('Not a valid function "{}" at line #{}'.format(p[1].astName, self.lexer.lineno))
         elif func['parList']:

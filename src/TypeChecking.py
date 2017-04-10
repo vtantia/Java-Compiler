@@ -1,7 +1,6 @@
 import Node
 
 class TypeChecking(object):
-
     intsWoLong = ['integer', 'byte', 'short', 'int']
     ints = intsWoLong + ['long']
 
@@ -12,6 +11,21 @@ class TypeChecking(object):
 
     numsChar = intsChar + decimals
     bitwise = intsChar + ['boolean']
+
+    def __init__(self):
+        self.mapping = {'=': ('=', None),
+                   '*=': ('*', self.binary_exp_addmult),
+                   '/=': ('/', self.binary_exp_addmult),
+                   '%=': ('%', self.binary_exp_addmult),
+                   '+=': ('+', self.binary_exp_addmult),
+                   '-=': ('-', self.binary_exp_addmult),
+                   '<<=': ('LSHIFT', self.binary_exp_shift),
+                   '>>=': ('RSHIFT', self.binary_exp_shift),
+                   '>>>=': ('RRSHIFT', self.binary_exp_shift),
+                   '&=': ('AND', self.binary_exp_bool),
+                   '|=': ('OR', self.binary_exp_bool),
+                   '^=': ('^', self.binary_exp_bitwise)
+                   }
 
     def binary_exp_cond(self, p):
         if len(p) == 2:
@@ -46,9 +60,9 @@ class TypeChecking(object):
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
         if type1 != 'boolean' and type2 != 'boolean':
+            p[0].nodeType.baseType = 'integer'
             print('Conditional allowed only on boolean: {} at line #{}'.format(
-                p[0]['astname'], self.lexer.lineno))
-
+                p[0].astName, self.lexer.lineno))
 
     def binary_exp_bitwise(self, p):
         if len(p) == 2:
@@ -68,7 +82,7 @@ class TypeChecking(object):
         else:
             p[0].nodeType.baseType = 'int'
             print('Incompatible types around the operator {} at line #{}'.format(
-                p[2]['astName'], self.lexer.lineno))
+                p[2].astName, self.lexer.lineno))
 
     def binary_exp_rel(self, p):
         if len(p) == 2:
@@ -151,7 +165,7 @@ class TypeChecking(object):
                 print('Not a matching type for ~ at line #{}'.format(
                     self.lexer.lineno))
 
-        if p[0]['astName'] == '!':
+        if p[0].astName == '!':
             p[0].nodeType.baseType = 'boolean'
             if p[2].nodeType.baseType != 'boolean':
                 print('Not a matching type for ! at line #{}'.format(
@@ -161,7 +175,7 @@ class TypeChecking(object):
         if len(p) == 2:
             return
 
-        if self.checkRef(p[2], p[1]):
+        if self.checkRef(p[index], p[3-index]):
             return
 
         p[0].nodeType.baseType = p[index].nodeType.baseType
@@ -183,7 +197,7 @@ class TypeChecking(object):
             else:
                 p[0].nodeType.baseType = 'int'
                 print('Not a matching type for {} at line #{}'.format(
-                    p[0]['astName'], self.lexer.lineno))
+                    p[0].astName, self.lexer.lineno))
 
     def checkRef(self, p1, p2, p3 = None):
         isPrim1 = p1.isPrim() or p1.nodeType.baseType == "String"
@@ -191,6 +205,8 @@ class TypeChecking(object):
         if isPrim1 and isPrim3:
             return False
         else:
+            print(isPrim1, isPrim3)
+            print(p1.astName, p3.astName)
             print('Incompatible type on line #{}: {} {} \
                     for operation {}'.format(self.lexer.lineno, p1.nodeType.baseType,
                         'and' + p3.nodeType.baseType if p3 else '', p2.astName))
@@ -215,7 +231,7 @@ class TypeChecking(object):
 
         return self.numsChar[idx]
 
-    def checkTypeAssignment(self, LHS, RHS, name):
+    def checkTypeAssignment(self, LHS, RHS):
         assert type(LHS) is Node.Node and type(RHS) is Node.Node
 
         a, b = LHS.nodeType, RHS.nodeType
@@ -234,5 +250,16 @@ class TypeChecking(object):
         if flag:
             return finalType
         else:
-            print(err, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+            print(err, ' at assignment operator on line #{}'.format(self.lexer.lineno))
             return False
+
+    def assign(self, tup, p):
+        op, func = tup
+        if op != '=':
+            tmp = p[2].astName
+            p[2].astName = op
+            func(p)
+            self.checkTypeAssignment(p[1], p[0])
+            p[2].astName = tmp
+        else:
+            self.checkTypeAssignment(p[1], p[3])

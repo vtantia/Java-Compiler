@@ -2,7 +2,7 @@ primTypeSizeTups = [('boolean', 1), ('byte', 1), ('short', 2), ('int', 4),
         ('long', 8), ('char', 1), ('float', 4), ('double', 8)]
 
 class Type(object):
-    def __init__(self, baseType = 'int', dim = []):
+    def __init__(self, baseType = 'integer', dim = []):
         self.baseType = baseType
         self.dim = dim
         self.prim = self.isPrim()

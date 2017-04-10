@@ -5,6 +5,7 @@ from copy import deepcopy
 
 class BaseParser(TypeChecking):
     def __init__(self):
+        TypeChecking.__init__(self)
         self.gst = {}
         typeSizeTups = Node.primTypeSizeTups + [('void', 0)]
         for datatype, size in typeSizeTups:
@@ -81,6 +82,10 @@ class BaseParser(TypeChecking):
                         self.recPrint(elem, count+1)
                     else:
                         print('\t'*count + key + '\t'*2 + str(elem))
+            elif isinstance(table[key], Node.Type):
+                print('\t'*count + key)
+                print('\t'*(count+1) + 'type' + '\t'*2 + table[key].baseType)
+                print('\t'*(count+1) + 'dim' + '\t'*2 + str(table[key].dim))
             else:
                 print('\t'*count + key + '\t'*2 + str(table[key]))
 
@@ -96,21 +101,46 @@ class BaseParser(TypeChecking):
 
         return typeParent
 
-    def findVar(self, var, isString = False):
-        if isString:
-            toFind = var
-        else:
-            toFind = var.qualName[0]
+    def findVar(self, var):
+        toFind = var[0]
+        err = False
+
         for scope in reversed(self.symTabStack):
             if scope.get(toFind):
-                # TODO recurse to the actual variable
-                return scope[toFind]
+                varEntry = scope[toFind]
+                break
+        else:
+            print('Variable {} on line #{} not found'.format(toFind, self.lexer.lineno))
+            err = True
 
-        print('Variable {} at line #{} not defined'.format(toFind, self.lexer.lineno))
-        return None
+        for i in range(1, len(var)):
+            varType = varEntry['type']
+            currScope = gst.get(varType.baseType)
+
+            if varType.dim:
+                print('Variable {} on line #{} is of array_type'.format(var[i-1], self.lexer.lineno))
+                err = True
+                break
+
+            if currScope is None:
+                print('{} on line #{} not a valid base type'.format(varType.baseType, self.lexer.lineno))
+                err = True
+                break
+            elif currScope.get(var[i]):
+                varEntry = currScope[var[i]]
+            else:
+                print('{} on line #{} is not a valid variable of {}'.format(var[i], self.lexer.lineno, varType.baseType))
+                err = True
+                break
+
+        if err:
+            return None
+        else:
+            return varEntry
 
     def resolveScope(self, var):
         if var.astName == 'name':
             var.astName = var.qualName[0]
-            symTabEntry = self.findVar(var)
-            var.nodeType = symTabEntry['type']
+            symTabEntry = self.findVar(var.qualName)
+            if symTabEntry:
+                var.nodeType = symTabEntry['type']
