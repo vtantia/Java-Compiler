@@ -84,13 +84,6 @@ class BaseParser(TypeChecking):
             else:
                 print('\t'*count + key + '\t'*2 + str(table[key]))
 
-    def splitType(self, typeList):
-        if isinstance(typeList, list):
-            for i in range(0, len(typeList)):
-                if type(typeList[i]) == int:
-                    return typeList[:i], typeList[i:]
-        return typeList, []
-
     def resolveType(self, varType, varName):
         t1 = varType.nodeType
         t2 = varName.nodeType

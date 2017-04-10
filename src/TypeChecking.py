@@ -2,13 +2,13 @@ import Node
 
 class TypeChecking(object):
 
-    intsWoLong = ['byte', 'short', 'int', 'integer']
+    intsWoLong = ['integer', 'byte', 'short', 'int']
     ints = intsWoLong + ['long']
 
     decimals = ['float', 'double']
 
-    intsCharWoLong = intsWoLong + ['char']
-    intsChar = ints + ['char']
+    intsCharWoLong = ['char'] + intsWoLong
+    intsChar =  ['char'] + ints
 
     numsChar = intsChar + decimals
     bitwise = intsChar + ['boolean']
@@ -16,7 +16,6 @@ class TypeChecking(object):
     def binary_exp_cond(self, p):
         if len(p) == 2:
             return
-
         if self.checkRef(p[1], p[2], p[3]):
             return
 
@@ -29,14 +28,12 @@ class TypeChecking(object):
         if p[3].nodeType == p[5].nodeType:
             p[0].nodeType = deepcopy(p[3].nodeType)
         else:
-            # TODO fix this
-            newType = self.checkTypeAssignment(p[3], p[5])
+            newType = self.lca(p[3], p[5])
             if newType:
                 p[0].nodeType = Type(baseType=newType)
             else:
                 print('Not matching types for conditional expression at line #{}'.format(
                     self.lexer.lineno))
-
 
     def binary_exp_bool(self, p):
         if len(p) == 2:
@@ -188,57 +185,6 @@ class TypeChecking(object):
                 print('Not a matching type for {} at line #{}'.format(
                     p[0]['astName'], self.lexer.lineno))
 
-    def binary(self, p):
-        return 2 if len(p) == 4 else None
-
-    def unary(self, p):
-        return 1 if len(p) == 3 else None
-
-    def checkTypeAssignment(self, LHS, RHS, name):
-        isMatch, finalType = self.matchType(LHS, RHS)
-
-        if isMatch == True:
-            return finalType
-        else:
-            print(finalType, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
-            return False
-
-    # Check if type of b can be converted to type of a
-    def convertible(self, a, b):
-        assert type(a) is Node.Type and type(b) is Node.Type
-
-        if a.isPrim and b.isPrim:
-            if b.baseType == 'integer': # Integer can be converted to anything. It is a
-                                        # placeholder when the type is not known
-                return True # convert(b, a.baseType)
-            if b.baseType == 'char' and numsChar.index(a.baseType) >= numsChar.index('int'):
-                # Indicates char can be converted to anything above int in the list numsChar
-                return True
-            if a.baseType == 'char' and b.baseType != 'char':
-                return False
-            if numsChar.index(a.baseType) >= numsChar.index(b.baseType):
-                # Indicates lower element in numsChar can be converted to higher element (except char)
-                return True
-        else:
-            return False
-
-    def allZeros(self, arr):
-        return arr.count(0) == len(arr)
-
-    def matchType(self, a, b, assign = True):
-        assert type(a) is Node.Node and type(b) is Node.Node
-
-        a = a.nodeType
-        b = b.nodeType
-
-        if not ((a.dim == b.dim) or
-                (len(a.dim) == len(b.dim) and
-                    (self.allZeros(a.dim) or self.allZeros(b.dim)))):
-            return False, "Dimension mismatch error"
-        if not self.convertible(a, b):
-            return False, "Base type mismatch error"
-        return True, a.baseType
-
     def checkRef(self, p1, p2, p3 = None):
         isPrim1 = p1.isPrim() or p1.nodeType.baseType == "String"
         isPrim3 = p3 is None or p3.isPrim() or p3.nodeType.baseType == "String"
@@ -249,3 +195,44 @@ class TypeChecking(object):
                     for operation {}'.format(self.lexer.lineno, p1.nodeType.baseType,
                         'and' + p3.nodeType.baseType if p3 else '', p2.astName))
             return True
+
+    def binary(self, p):
+        return 2 if len(p) == 4 else None
+
+    def unary(self, p):
+        return 1 if len(p) == 3 else None
+
+    def lca(self, t1, t2):
+        assert type(t1) is Node.Type and type(t2) is Node.Type
+
+        a, b = t1.baseType, t2.baseType
+        idx = max(self.numsChar.index(a), self.numsChar.index(b))
+
+        # If only one of them is char and the other is not integer - to
+        # handle cases like byte, char and short, char
+        if [a,b].count('char') == 1 and [a,b].count('integer') == 0:
+            idx = max(idx, self.numsChar.index(int))
+
+        return self.numsChar[idx]
+
+    def checkTypeAssignment(self, LHS, RHS, name):
+        assert type(LHS) is Node.Node and type(RHS) is Node.Node
+
+        a, b = LHS.nodeType, RHS.nodeType
+
+        if len(a.dim) != len(b.dim):
+            flag, err = False, "Dimension mismatch error"
+        elif b.dim.count(0) == len(b.dim) and b.dim:
+            flag, err = False, "Array on RHS not initialized"
+        else:
+            a.dim = b.dim
+            if self.lca(a,b) != a.baseType:
+                flag, err = False, "Base type mismatch error"
+            else:
+                flag, finalType = True, a.baseType
+
+        if flag:
+            return finalType
+        else:
+            print(err, ' at operator for \'{}\' on line #{} #TODO'.format(name, self.lexer.lineno))
+            return False
