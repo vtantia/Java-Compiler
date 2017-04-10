@@ -21,7 +21,6 @@ class TypeChecking(object):
             return
 
         p[0].nodeType = Node.Type(baseType='boolean')
-        #  p[0].nodeType, p[0]['reference'] = 'boolean', []
 
         if p[1].nodeType.baseType != 'boolean':
             print('Incompatible type on line #{}: {}{} can\'t be converted \
@@ -29,14 +28,11 @@ class TypeChecking(object):
 
         if p[3].nodeType == p[5].nodeType:
             p[0].nodeType = deepcopy(p[3].nodeType)
-            #  p[0]['type'], p[0]['reference'] = p[3]['type'], p[3]['reference']
         else:
             # TODO fix this
             newType = self.checkTypeAssignment(p[3], p[5])
             if newType:
                 p[0].nodeType = Type(baseType=newType)
-                #  p[0]['type'] = newType
-                #  p[0]['reference'] = []
             else:
                 print('Not matching types for conditional expression at line #{}'.format(
                     self.lexer.lineno))
@@ -49,7 +45,6 @@ class TypeChecking(object):
         if self.checkRef(p[1], p[2], p[3]):
             return
 
-        #  p[0]['type'], p[0]['reference'] = 'boolean', []
         p[0].nodeType = Node.Type(baseType='boolean')
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
@@ -245,7 +240,9 @@ class TypeChecking(object):
         return True, a.baseType
 
     def checkRef(self, p1, p2, p3 = None):
-        if p1.isPrim() and (p3 is None or p3.isPrim()):
+        isPrim1 = p1.isPrim() or p1.nodeType.baseType == "String"
+        isPrim3 = p3 is None or p3.isPrim() or p3.nodeType.baseType == "String"
+        if isPrim1 and isPrim3:
             return False
         else:
             print('Incompatible type on line #{}: {} {} \

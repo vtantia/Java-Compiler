@@ -26,7 +26,6 @@ class ExpressionParser(BaseParser):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', self.binary(p))
         p[0].nodeType = deepcopy(p[1].nodeType)
-        #  p[0]['type'], p[0]['reference'] = p[1]['type'], p[1]['reference']
         # TODO: type checking
         #  if p[0]['astName'] == '=':
 
@@ -351,15 +350,11 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'dims_loop')
         if len(p) == 3:
             p[0].nodeType.dim = p[1].nodeType.dim + p[2].nodeType.dim
-        #  p[0]['dim'] = p[1]['dim']
-        #  if len(p) == 3:
-            #  p[0]['dim'] += p[2]['dim']
 
     def p_one_dim_loop(self, p):
         '''one_dim_loop : '[' ']' '''
         self.gen(p, 'one_dim_loop')
         p[0].nodeType.dim = [0]
-        #  p[0]['dim'] = [0]
 
     def p_cast_expression(self, p):
         '''cast_expression : '(' primitive_type dims_opt ')' unary_expression'''
@@ -465,9 +460,6 @@ class StatementParser(BaseParser):
         p[0].qualName = [p[1].astName]
         if p[2]:
             p[0].nodeType.dim = p[2].nodeType.dim
-        #  p[0]['varName'] = p[1]['astName']
-        #  if p[2]:
-            #  p[0]['dim'] = p[2]['dim']
 
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
@@ -522,21 +514,18 @@ class StatementParser(BaseParser):
         p[0].nodeType.baseType = 'void'
         p[0].nodeType.dim = [0]
         #  unknown data type and zero length of array
-        #  p[0]['type'] = 'reference'
-        #  p[0]['reference'] = [0, 0]
 
     def p_array_initializer2(self, p):
         '''array_initializer : '{' variable_initializers '}'
                              | '{' variable_initializers ',' '}' '''
         self.gen(p, 'array_initializer')
         p[0].nodeType = deepcopy(p[2].nodeType)
-        #  p[0]['type'] = p[2]['type']
-        #  p[0]['reference'] = p[2]['reference']
 
     def p_variable_initializers(self, p):
         '''variable_initializers : variable_initializer
                                  | variable_initializers ',' variable_initializer'''
         self.gen(p, 'variable_initializers')
+# TODO: explain more clearly
         if len(p) == 2:
             p[0].nodeType.dim = [1] + p[0].nodeType.dim
         else:
@@ -795,13 +784,11 @@ class NameParser(BaseParser):
         '''simple_name : NAME'''
         self.gen(p, 'simple_name')
         p[0].qualName = [p[0].astName]
-        #  p[0]['name'] = [p[0]['astName']]
 
     def p_qualified_name(self, p):
         '''qualified_name : name '.' simple_name'''
         self.gen(p, 'qualified_name')
         p[0].qualName = p[1].qualName + p[3].qualName
-        #  p[0]['name'] = p[1]['name'] + p[3]['name']
 
 class LiteralParser(BaseParser):
 
@@ -830,26 +817,22 @@ class LiteralParser(BaseParser):
     def p_literal1(self, p):
         '''literal : CHAR_LITERAL'''
         self.gen(p, 'literal')
-        #  p[0]['type'], p[0]['reference'] = 'char', []
         p[0].nodeType.baseType = 'char'
 
     def p_literal2(self, p):
         '''literal : STRING_LITERAL'''
         self.gen(p, 'literal')
-        #  p[0]['type'], p[0]['reference'] = 'String', []
         p[0].nodeType.baseType = 'String'
 
     def p_literal3(self, p):
         '''literal : TRUE
                    | FALSE'''
         self.gen(p, 'literal')
-        #  p[0]['type'], p[0]['reference'] = 'boolean', []
         p[0].nodeType.baseType = 'boolean'
 
     def p_literal4(self, p):
         '''literal : NULL'''
         self.gen(p, 'literal')
-        #  p[0]['type'], p[0]['reference'] = 'null', []
         p[0].nodeType.baseType = 'null'
 
 class TypeParser(BaseParser):
@@ -884,11 +867,6 @@ class TypeParser(BaseParser):
         '''type : primitive_type
                 | reference_type'''
         self.gen(p, 'type')
-        #  if p[0]['type'] !=  'primitive_type':
-            #  p[0]['reference'] = p[0]['type']
-            #  p[0]['type'] = 'reference'
-        #  else:
-            #  p[0]['type'] = p[0]['astName']
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -902,7 +880,6 @@ class TypeParser(BaseParser):
                           | DOUBLE'''
         self.gen(p, 'primitive_type')
         p[0].nodeType.baseType = p[0].astName
-        #  p[0]['type'] = 'primitive_type'
 
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
@@ -930,14 +907,6 @@ class TypeParser(BaseParser):
         self.gen(p, 'array_type')
         p[0].nodeType.baseType = p[1].astName
         p[0].nodeType.dim = p[2].nodeType.dim
-        #  if p[1]['astName'] == 'name':
-            #  p[0]['type'] = p[1]['name']
-        #  elif p[1]['type'] == 'primitive_type':
-            #  p[0]['type'] = [p[0]['astName']]
-        #  else:
-            #  print('Parsing Error at line #{}'.format(self.lexer.lineno))
-
-        #  p[0]['type'] += p[2]['dim']
 
 class ClassParser(BaseParser):
 

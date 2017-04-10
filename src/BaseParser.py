@@ -58,18 +58,12 @@ class BaseParser(TypeChecking):
                 if not isinstance(p[i], Node.Node):
                     nodeName = p[i]
                     p[i] = Node.Node(nodeName, self.createNode(nodeName))
-                    # p[i] = {}
-                    # p[i]['astName'] = nodeName
-                    # p[i]['astNode'] = self.createNode(nodeName)
 
             if len(useful_wo_index) != 1:
                 if index_ast:
                     p[0] = p[index_ast]
                 else:
                     p[0] = Node.Node(name, self.createNode(name))
-                    # p[0] = {}
-                    # p[0]['astName'] = name
-                    # p[0]['astNode'] = self.createNode(name, self.ast)
                 for i in useful_wo_index:
                     self.ast.add_edge(pydot.Edge(p[0].astNode, p[i].astNode))
             else:
@@ -108,22 +102,6 @@ class BaseParser(TypeChecking):
             typeParent.dim = t2.dim
 
         return typeParent
-        #  if varType['type'] == 'reference':
-            #  datatype, dim = self.splitType(varType['reference'])
-        #  else:
-            #  datatype = [varType['type']]
-            #  dim = None
-
-        #  if dim and varName.get('dim'):
-            #  print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
-        #  else:
-            #  dim = varName.get('dim')
-
-        #  # return in the format basetype(primitive or reference), referred type(if base is not primitive), dimensions
-        #  if not dim:
-            #  return varType['type'], varType.get('reference')
-        #  else:
-            #  return 'reference', datatype + dim
 
     def findVar(self, var, isString = False):
         if isString:
