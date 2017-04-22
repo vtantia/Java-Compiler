@@ -3,6 +3,7 @@ import Node
 from TypeChecking import TypeChecking
 from copy import deepcopy
 
+
 class BaseParser(TypeChecking):
     def __init__(self):
         TypeChecking.__init__(self)
@@ -16,7 +17,6 @@ class BaseParser(TypeChecking):
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
         self.ctr = 0
         self.currFile = ''
-
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
@@ -51,7 +51,7 @@ class BaseParser(TypeChecking):
         self.ast.add_node(p)
         return p
 
-    def gen(self, p, name, index_ast = None):
+    def gen(self, p, name, index_ast=None):
         useful_wo_index = [i for i, item in enumerate(p) if item and i != index_ast]
         useful = useful_wo_index + [index_ast] if index_ast else useful_wo_index
         if useful:
@@ -60,7 +60,7 @@ class BaseParser(TypeChecking):
                     nodeName = p[i]
                     p[i] = Node.Node(nodeName, self.createNode(nodeName))
 
-            if len(useful_wo_index) != 1:
+            if len(useful) != 1:
                 if index_ast:
                     p[0] = p[index_ast]
                 else:
@@ -92,10 +92,13 @@ class BaseParser(TypeChecking):
     def resolveType(self, varType, varName):
         t1 = varType.nodeType
         t2 = varName.nodeType
-        if t1.dim and t2.dim:
-            print('Both the Variable type and Variable name can\'t have dimension, error on line #{}'.format(self.lexer.lineno))
 
         typeParent = deepcopy(varType.nodeType)
+
+        if t1.dim and t2.dim:
+            print('Both the Variable type and Variable name can\'t  have dimension, error on line #{}'.
+                    format(self.lexer.lineno))
+
         if not t1.dim:
             typeParent.dim = t2.dim
 
@@ -113,25 +116,29 @@ class BaseParser(TypeChecking):
             print('Variable {} on line #{} not found'.format(toFind, self.lexer.lineno))
             err = True
 
-        for i in range(1, len(var)):
-            varType = varEntry['type']
-            currScope = gst.get(varType.baseType)
+        if not err:
+            for i in range(1, len(var)):
+                varType = varEntry['type']
+                currScope = self.gst.get(varType.baseType)
 
-            if varType.dim:
-                print('Variable {} on line #{} is of array_type'.format(var[i-1], self.lexer.lineno))
-                err = True
-                break
+                if varType.dim:
+                    print('Variable {} on line #{} is of array_type'.format(
+                        var[i-1], self.lexer.lineno))
+                    err = True
+                    break
 
-            if currScope is None:
-                print('{} on line #{} not a valid base type'.format(varType.baseType, self.lexer.lineno))
-                err = True
-                break
-            elif currScope.get(var[i]):
-                varEntry = currScope[var[i]]
-            else:
-                print('{} on line #{} is not a valid variable of {}'.format(var[i], self.lexer.lineno, varType.baseType))
-                err = True
-                break
+                if currScope is None:
+                    print('{} on line #{} not a valid base type'.format(
+                        varType.baseType, self.lexer.lineno))
+                    err = True
+                    break
+                elif currScope.get(var[i]):
+                    varEntry = currScope[var[i]]
+                else:
+                    print('{} on line #{} is not a valid member of {}'.format(
+                        var[i], self.lexer.lineno, varType.baseType))
+                    err = True
+                    break
 
         if err:
             return None
@@ -144,3 +151,53 @@ class BaseParser(TypeChecking):
             symTabEntry = self.findVar(var.qualName)
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
+
+    def checkMethodInvocation(self, func, f_name, argList):
+
+        if func:
+            desc = func.get('desc')
+            if desc != 'method' and desc != 'constructor':
+                print('On line #{}, {} is not a function'.format(
+                    self.lexer.lineno, f_name))
+                return False
+            elif len(func['parList']) == len(argList):
+                for i in range(0, len(func['parList'])):
+
+                    expected_type = func[func['parList'][i]]['type']
+                    arguement_type = argList[i]
+
+                    if not self.checkTypeAssignment(expected_type, arguement_type, ifNode=False):
+
+                        print('Incompatible arguement type passed to method {} at line #{}'.
+                                format(p[1].astName, self.lexer.lineno))
+                        print('for parameter {}, Expected type: {}, Arguement type: {}'.
+                                format(func[parList][i], expected_type, arguement_type))
+
+                return func['type']
+            else:
+                print('method {} requires {} arguments, passed {} on line #{}'.
+                        format(f_name, len(func['parList']), len(argList), self.lexer.lineno))
+
+                return False
+
+    def findAttribute(self, node_type, attribute):
+        err=False
+
+        if node_type.dim:
+            print('Can\'t dereference {} on line #{} from array_type'.format(
+                attribute, self.lexer.lineno))
+            err = True
+
+        currScope = self.gst.get(node_type.baseType)
+
+        if currScope and currScope.get(attribute):
+            varEntry = currScope[attribute]
+        else:
+            print('{} on line #{} is not a valid member of {}'.format(
+                attribute, self.lexer.lineno, node_type.baseType))
+            err = True
+
+        if err:
+            return False
+        else:
+            return varEntry

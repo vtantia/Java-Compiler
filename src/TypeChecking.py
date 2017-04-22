@@ -207,9 +207,9 @@ class TypeChecking(object):
         else:
             print(isPrim1, isPrim3)
             print(p1.astName, p3.astName)
-            print('Incompatible type on line #{}: {} {} \
-                    for operation {}'.format(self.lexer.lineno, p1.nodeType.baseType,
-                        'and' + p3.nodeType.baseType if p3 else '', p2.astName))
+            print('Incompatible type on line #{}: {} {} for operation {}'.
+                    format(self.lexer.lineno, p1.nodeType.baseType,
+                        'and ' + p3.nodeType.baseType if p3 else '', p2.astName))
             return True
 
     def binary(self, p):
@@ -231,10 +231,14 @@ class TypeChecking(object):
 
         return self.numsChar[idx]
 
-    def checkTypeAssignment(self, LHS, RHS):
-        assert type(LHS) is Node.Node and type(RHS) is Node.Node
+    def checkTypeAssignment(self, LHS, RHS, ifNode=True):
+        if ifNode:
+            assert type(LHS) is Node.Node and type(RHS) is Node.Node
+            a, b = LHS.nodeType, RHS.nodeType
 
-        a, b = LHS.nodeType, RHS.nodeType
+        else:
+            assert type(LHS) is Node.Type and type(RHS) is Node.Type
+            a, b = LHS, RHS
 
         if len(a.dim) != len(b.dim):
             flag, err = False, "Dimension mismatch error"

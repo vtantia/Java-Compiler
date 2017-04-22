@@ -8,10 +8,12 @@ class Type(object):
         self.prim = self.isPrim()
 
     def isPrim(self):
-        return self.dim == [] and any([self.baseType == type for type, _ in primTypeSizeTups])
+        return self.dim == [] and any(
+                [self.baseType == type for type, _ in primTypeSizeTups]
+                + [self.baseType == 'integer'])
 
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        def __eq__(self, other):
+            return self.__dict__ == other.__dict__
 
 class Node(object):
     def __init__(self, astName, astNode, nodeType = None, qualName = []):

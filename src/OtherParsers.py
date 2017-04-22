@@ -329,7 +329,7 @@ class ExpressionParser(BaseParser):
                                 | '(' expression_not_name ')' '''
         self.gen(p, 'primary_no_new_array')
         self.resolveScope(p[2])
-        P[0].nodeType = deepcopy(p[2].nodeType)
+        p[0].nodeType = deepcopy(p[2].nodeType)
 
     def p_dims_opt(self, p):
         '''dims_opt : dims'''
@@ -530,21 +530,29 @@ class StatementParser(BaseParser):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
+        # fetch the symbol table entry for method
         func = self.findVar([p[1].astName])
-        if func is None:
-            print('Not a valid function "{}" at line #{}'.format(p[1].astName, self.lexer.lineno))
-        elif func['parList']:
-            #TODO
-            pass
-        else:
-            for idx in ['type', 'reference']:
-                p[0][idx] = func[idx]
+        node_type = self.checkMethodInvocation(func, p[1].astName, p[3].nodeType)
+
+        if node_type:
+            p[0].nodeType = node_type
 
     def p_method_invocation2(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
                              | primary '.' NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
-        # TODO
+
+        # fetch the symbol table entry for method
+        if p[1].astName == 'name':
+            func = self.findVar(p[1].qualName + [p[3].astName])
+        else:
+            func = self.findAttribute(p[1].nodeType, p[3]['astName'])
+
+        # fetch the return type, false if no function exists
+        node_type = self.checkMethodInvocation(func, p[3].astName, p[5].nodeType)
+
+        if node_type:
+            p[0].nodeType = node_type
 
     def p_labeled_statement(self, p):
         '''labeled_statement : label ':' statement'''
@@ -703,17 +711,13 @@ class StatementParser(BaseParser):
         '''class_instance_creation_expression : NEW class_type '(' argument_list_opt ')' class_body_opt'''
         self.gen(p, 'class_instance_creation_expression')
 
-    def p_class_instance_creation_expression2(self, p):
-        '''class_instance_creation_expression : primary '.' NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        self.gen(p, 'class_instance_creation_expression')
+        # find the constructor in the class's symbol table entry
+        func = self.findVar(p[2].qualName + p[2].qualName)
 
-    def p_class_instance_creation_expression3(self, p):
-        '''class_instance_creation_expression : class_instance_creation_expression_name NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        self.gen(p, 'class_instance_creation_expression')
+        node_type = self.checkMethodInvocation(func, p[2].qualName, p[4].nodeType)
 
-    def p_class_instance_creation_expression_name(self, p):
-        '''class_instance_creation_expression_name : name '.' '''
-        self.gen(p, 'class_instance_creation_expression_name')
+        if node_type:
+            p[0].nodeType = node_type
 
     def p_class_body_opt(self, p):
         '''class_body_opt : class_body
@@ -723,6 +727,11 @@ class StatementParser(BaseParser):
     def p_field_access(self, p):
         '''field_access : primary '.' NAME'''
         self.gen(p, 'field_access')
+
+        data_node = self.findAttribute(p[1].nodeType, p[3].astName)
+
+        if data_node:
+            p[0].nodeType = data_node
 
     def p_array_access(self, p):
         '''array_access : name '[' expression ']'
@@ -1005,6 +1014,10 @@ class ClassParser(BaseParser):
         vdid = p[3] if len(p) == 4 else p[4]
         varName = vdid.qualName[0]
 
+        if len(vdid.qualName) != 1:
+            print("variable identifier expected instead of {} at line #{}".format(qualName, self.lexer.lineno))
+
+        # Err: check if type has been defined or not
         p[0].nodeType = self.resolveType(p[2], vdid)
         p[0].qualName = varName
 
@@ -1017,8 +1030,6 @@ class ClassParser(BaseParser):
             currScope[varName]['type'] = p[0].nodeType
             currScope[varName]['lineNo'] = self.lexer.lineno
 
-            # Alloting at-least 4 bytes to all variables passed to this function
-            # TODO fix this.
             currScope[varName]['size'] = 4
             if self.gst.get(p[0].nodeType.baseType):
                 if self.gst[p[0].nodeType.baseType]['desc'] == 'primitive_type':
@@ -1072,11 +1083,16 @@ class ClassParser(BaseParser):
     def p_argument_list_opt2(self, p):
         '''argument_list_opt : empty'''
         self.gen(p, 'argument_list_opt')
+        p[0].nodeType = []
 
     def p_argument_list(self, p):
         '''argument_list : expression
                          | argument_list ',' expression'''
         self.gen(p, 'argument_list')
+        if len(p) == 2:
+            p[0].nodeType = [p[0].nodeType]
+        else:
+            p[0].nodeType = p[1].nodeType + [p[3].nodeType]
 
 class CompilationUnitParser(BaseParser):
 
