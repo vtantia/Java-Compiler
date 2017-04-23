@@ -97,7 +97,8 @@ class TypeChecking(object):
         oper = p[2].astName
         if oper == 'instanceof':
             pass
-        elif type1 == type2:
+        elif type1 == type2 or self.checkTypeAssignment(p[1], p[3]):
+            # TODO Think about the above Condition
             if type1 in self.numsChar:
                 pass
             elif (oper == '==' or oper == '!=') and type1 == 'boolean':
@@ -205,11 +206,11 @@ class TypeChecking(object):
         if isPrim1 and isPrim3:
             return False
         else:
-            print(isPrim1, isPrim3)
-            print(p1.astName, p3.astName)
-            print('Incompatible type on line #{}: {} {} for operation {}'.
-                    format(self.lexer.lineno, p1.nodeType.baseType,
-                        'and ' + p3.nodeType.baseType if p3 else '', p2.astName))
+            #  print(isPrim1, isPrim3)
+            #  print(p1.astName, p3.astName)
+            #  print('Incompatible type on line #{}: {} {} for operation {}'.
+                    #  format(self.lexer.lineno, p1.nodeType.baseType,
+                        #  'and ' + p3.nodeType.baseType if p3 else '', p2.astName))
             return True
 
     def binary(self, p):
@@ -242,19 +243,24 @@ class TypeChecking(object):
 
         if len(a.dim) != len(b.dim):
             flag, err = False, "Dimension mismatch error"
-        elif b.dim.count(0) == len(b.dim) and b.dim:
-            flag, err = False, "Array on RHS not initialized"
+
+        # TODO Discuss
+        #  elif b.dim.count(0) == len(b.dim) and b.dim:
+            #  flag, err = False, "Array on RHS not initialized"
+
         else:
             a.dim = b.dim
-            if self.lca(a,b) != a.baseType:
-                flag, err = False, "Base type mismatch error"
-            else:
+            if a.baseType == b.baseType:
                 flag, finalType = True, a.baseType
+            elif self.lca(a,b) == a.baseType:
+                flag, finalType = True, a.baseType
+            else:
+                flag, err = False, "Base type mismatch error"
 
         if flag:
             return finalType
         else:
-            print(err, ' at assignment operator on line #{}'.format(self.lexer.lineno))
+            print(err, 'at assignment operator on line #{}'.format(self.lexer.lineno))
             return False
 
     def assign(self, tup, p):

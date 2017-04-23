@@ -20,7 +20,7 @@ class BaseParser(TypeChecking):
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
-        currTable[name] = {'size': 0, 'desc': desc}
+        currTable[name] = {'size': 0, 'desc': desc, 'scope_name':name}
         self.symTabStack.append(currTable[name])
         # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
 
@@ -156,22 +156,26 @@ class BaseParser(TypeChecking):
 
         if func:
             desc = func.get('desc')
+            parList = func.get('parList')
+            if not parList:
+                parList = []
             if desc != 'method' and desc != 'constructor':
                 print('On line #{}, {} is not a function'.format(
                     self.lexer.lineno, f_name))
                 return False
-            elif len(func['parList']) == len(argList):
-                for i in range(0, len(func['parList'])):
+            elif len(parList) == len(argList):
+                for i in range(0, len(parList)):
 
-                    expected_type = func[func['parList'][i]]['type']
-                    arguement_type = argList[i]
+                    expected_type = func[parList[i]]['type']
+                    argument_type = argList[i]
 
-                    if not self.checkTypeAssignment(expected_type, arguement_type, ifNode=False):
+                    if not self.checkTypeAssignment(expected_type, argument_type, ifNode=False):
 
-                        print('Incompatible arguement type passed to method {} at line #{}'.
-                                format(p[1].astName, self.lexer.lineno))
-                        print('for parameter {}, Expected type: {}, Arguement type: {}'.
-                                format(func[parList][i], expected_type, arguement_type))
+                        print('Incompatible argument type passed to method {} at line #{}'.
+                                format(f_name, self.lexer.lineno))
+                        print('for parameter {}, Expected type: {}{}, argument type: {}{}'.
+                            format(parList[i], expected_type.baseType, len(expected_type.dim),
+                                    argument_type.baseType, len(argument_type.dim)))
 
                 return func['type']
             else:

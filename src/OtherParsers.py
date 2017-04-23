@@ -1,6 +1,8 @@
 from BaseParser import BaseParser
 import re
+import Node
 from copy import deepcopy
+
 
 class ExpressionParser(BaseParser):
 
@@ -321,8 +323,13 @@ class ExpressionParser(BaseParser):
                                 | array_access'''
         self.gen(p, 'primary_no_new_array')
         if p[0].astName == 'this':
-            pass
-            # TODO
+            for scope in reversed(self.symTabStack):
+                if scope.get('desc') == 'class':
+                    p[0].nodeType = Node.Type(baseType=scope['scope_name'])
+                    break
+            else:
+                print('Something is wrong with the symbol table at lineno #{}'.
+                        format(self.lexer.lineno))
 
     def p_primary_no_new_array2(self, p):
         '''primary_no_new_array : '(' name ')'
@@ -358,7 +365,14 @@ class ExpressionParser(BaseParser):
     def p_cast_expression(self, p):
         '''cast_expression : '(' primitive_type dims_opt ')' unary_expression'''
         self.gen(p, 'cast_expression')
-        # TODO
+        p[0].nodeType.baseType = p[2].nodeType.baseType
+        if p[3]:
+            p[0].nodeType.dim = p[3].nodeType.dim
+
+        if not self.checkTypeAssignment(p[0], p[5]):
+            print('Can\'t cast the the paramter on line #{} to {}'.format(
+                self.lexer.lineno, p[2].nodeType.baseType))
+
 
 class StatementParser(BaseParser):
 
@@ -532,10 +546,11 @@ class StatementParser(BaseParser):
 
         # fetch the symbol table entry for method
         func = self.findVar([p[1].astName])
-        node_type = self.checkMethodInvocation(func, p[1].astName, p[3].nodeType)
+        node_type = self.checkMethodInvocation(func, p[1].astName,
+                p[3].nodeType if p[3] else [])
 
         if node_type:
-            p[0].nodeType = node_type
+            p[0].nodeType = deepcopy(node_type)
 
     def p_method_invocation2(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
@@ -546,13 +561,14 @@ class StatementParser(BaseParser):
         if p[1].astName == 'name':
             func = self.findVar(p[1].qualName + [p[3].astName])
         else:
-            func = self.findAttribute(p[1].nodeType, p[3]['astName'])
+            func = self.findAttribute(p[1].nodeType, p[3].astName)
 
         # fetch the return type, false if no function exists
-        node_type = self.checkMethodInvocation(func, p[3].astName, p[5].nodeType)
+        node_type = self.checkMethodInvocation(func, p[3].astName,
+                p[5].nodeType if p[5] else [])
 
         if node_type:
-            p[0].nodeType = node_type
+            p[0].nodeType = deepcopy(node_type)
 
     def p_labeled_statement(self, p):
         '''labeled_statement : label ':' statement'''
@@ -712,12 +728,15 @@ class StatementParser(BaseParser):
         self.gen(p, 'class_instance_creation_expression')
 
         # find the constructor in the class's symbol table entry
-        func = self.findVar(p[2].qualName + p[2].qualName)
+        class_entry = self.findVar(p[2].qualName)
+        construct = self.findAttribute(Node.Type(baseType =
+            class_entry['scope_name']), p[2].qualName[0])
 
-        node_type = self.checkMethodInvocation(func, p[2].qualName, p[4].nodeType)
+        node_type = self.checkMethodInvocation(construct, p[2].qualName,
+                p[4].nodeType if p[4] else [])
 
         if node_type:
-            p[0].nodeType = node_type
+            p[0].nodeType = deepcopy(node_type)
 
     def p_class_body_opt(self, p):
         '''class_body_opt : class_body
@@ -737,26 +756,57 @@ class StatementParser(BaseParser):
         '''array_access : name '[' expression ']'
                         | primary_no_new_array '[' expression ']' '''
         self.gen(p, 'array_access')
+        if p[1].astName == 'name':
+            node_type = self.findVar(p[1].qualName)
+
+            if node_type:
+                p[0].nodeType = deepcopy(node_type['type'])
+        else:
+            p[0].nodeType = deepcopy(p[1].nodeType)
+
+        if not p[0].nodeType.dim:
+            print('Trying to dereference a non-array type variable {} on line #{}'.
+                    format(p[1].qualName[-1], self.lexer.lineno))
+        else:
+            p[0].nodeType.dim = p[0].nodeType.dim[1:]
 
     def p_array_creation_with_array_initializer(self, p):
         '''array_creation_with_array_initializer : NEW primitive_type dim_with_or_without_exprs array_initializer
                                                  | NEW class_or_interface_type dim_with_or_without_exprs array_initializer'''
         self.gen(p, 'array_creation_with_array_initializer')
+        p[0].nodeType.baseType = p[2].nodeType.baseType
+        p[0].nodeType.dim = deepcopy(p[3].nodeType.dim)
+
+        if not self.checkTypeAssignment(p[0], p[4]):
+            print('Type mismatch, Can\'t initialize the array at line #{}'.
+                    format(self.lexer.lineno))
 
     def p_dim_with_or_without_exprs(self, p):
         '''dim_with_or_without_exprs : dim_with_or_without_expr
                                      | dim_with_or_without_exprs dim_with_or_without_expr'''
         self.gen(p, 'dim_with_or_without_exprs')
+        if len(p) == 3:
+            p[0].nodeType.dim = p[1].nodeType.dim + p[2].nodeType.dim
 
     def p_dim_with_or_without_expr(self, p):
         '''dim_with_or_without_expr : '[' expression ']'
                                     | '[' ']' '''
         self.gen(p, 'dim_with_or_without_expr')
+        p[0].nodeType.dim = [0]
+        if len(p) == 4:
+            node_type = p[2].nodeType
+            if not self.checkTypeAssignment(Node.Type(baseType='int'),
+                    node_type, ifNode=False):
+                print('Not a valid array length type {}{} at line #{}'.format(
+                    node_type.baseType, node_type.dim, self.lexer.lineno))
 
     def p_array_creation_without_array_initializer(self, p):
         '''array_creation_without_array_initializer : NEW primitive_type dim_with_or_without_exprs
                                                     | NEW class_or_interface_type dim_with_or_without_exprs'''
         self.gen(p, 'array_creation_without_array_initializer')
+        p[0].nodeType.dim = deepcopy(p[3].nodeType.dim)
+        p[0].nodeType.baseType = p[2].nodeType.baseType
+
 
 class NameParser(BaseParser):
 
@@ -891,6 +941,8 @@ class TypeParser(BaseParser):
         '''array_type : primitive_type dims
                       | name dims'''
         self.gen(p, 'array_type')
+        if p[1].astName == 'name':
+            p[1].astName = p[1].qualName[0]
         p[0].nodeType.baseType = p[1].astName
         p[0].nodeType.dim = p[2].nodeType.dim
 
@@ -980,11 +1032,12 @@ class ClassParser(BaseParser):
 
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt NAME '(' '''
-        name = p[2]
+        self.gen(p, 'constructor_header_name')
+        name = p[2].astName
         self.startNewScope(name, 'constructor')
         currScope = self.symTabStack[-1]
+        currScope['type'] = Node.Type(baseType=name)
         currScope['size'] = -8
-        self.gen(p, 'constructor_header_name')
 
     def p_formal_parameter_list_opt(self, p):
         '''formal_parameter_list_opt : formal_parameter_list'''
@@ -1083,7 +1136,6 @@ class ClassParser(BaseParser):
     def p_argument_list_opt2(self, p):
         '''argument_list_opt : empty'''
         self.gen(p, 'argument_list_opt')
-        p[0].nodeType = []
 
     def p_argument_list(self, p):
         '''argument_list : expression
