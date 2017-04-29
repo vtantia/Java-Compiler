@@ -1,14 +1,14 @@
 # ERROR CHECKING
     TODO
+        Use of uninitialized variables
+
+    DONE
         Use of undeclared variables
         Function schema when being called
         Incompatible operations
-        *** Scoping Errors
-        *** Type errors (mismatch, etc)
-        Use of uninitialized variables
+        Scoping Errors
+        Type errors (mismatch, etc)
         Non-context-free restrictions on the language
-
-    DONE
         Double declaration for variables in the same scope
 
 # IMPLEMENTATION
@@ -22,3 +22,22 @@
         Rules with empty on RHS (generated rules)
         Size occupied by 1 unit of given variable/class ID
         Type of non primitive variables
+
+# Not Implementing
+
+    Subclass and Inheritance, ``super''
+    Static data in class
+    Polymorphism
+    function use above declaration
+    try-catch, synchronized, finally,
+    generic types
+    enhanced for statement
+    interace, annotation, enumeration
+
+
+fix TypeParser rules
+
+FILE IO
+Large Expressions (Register managemnet)
+Passing more than 7 values
+jumps over jump

@@ -20,7 +20,17 @@ class BaseParser(TypeChecking):
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
-        currTable[name] = {'size': 0, 'desc': desc, 'scope_name':name}
+        if not currTable.get(name):
+            currTable[name] = {
+                    'size': 0,
+                    'desc': desc,
+                    'scope_name': name}
+
+        # allow abstract declaration for method
+        elif desc != 'method':
+            print('Multiple definitions for {} {} defined on line #{}'.format(
+                desc, name, self.lexer.lineno)
+
         self.symTabStack.append(currTable[name])
         # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
 
@@ -29,12 +39,24 @@ class BaseParser(TypeChecking):
         if not currTable.get('blockList'):
             currTable['blockList'] = []
 
-        newTable = {'size': 0, 'desc': desc}
+        newTable={
+            'size': currTable['size'],
+            'desc': desc}
+
         currTable['blockList'].append(newTable)
         self.symTabStack.append(newTable)
 
     def endCurrScope(self):
-        # print('Removing a Table %d %s' % (len(self.symTabStack)-1, self.symTabStack[-1]['desc']))
+        # print('Removing a Table %d %s' % (len(self.symTabStack)-1,
+            # self.symTabStack[-1]['desc']))
+        currTable=self.symTabStack[-1]
+
+        maxOffset=currTable['size']
+        for block in currTable['blockList']:
+            maxOffset=max(maxOffset, block['size'])
+
+        currTable['size']=maxOffset
+
         self.symTabStack.pop()
 
     def replace_whitespaces(self, s):

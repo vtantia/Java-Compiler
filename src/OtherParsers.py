@@ -729,7 +729,7 @@ class StatementParser(BaseParser):
 
         # find the constructor in the class's symbol table entry
         class_entry = self.findVar(p[2].qualName)
-        construct = self.findAttribute(Node.Type(baseType =
+        construct = self.findAttribute(Node.Type(baseType=
             class_entry['scope_name']), p[2].qualName[0])
 
         node_type = self.checkMethodInvocation(construct, p[2].qualName,
@@ -1003,7 +1003,6 @@ class ClassParser(BaseParser):
 
     def p_class_member_declaration(self, p):
         '''class_member_declaration : field_declaration
-                                    | class_declaration
                                     | method_declaration'''
         self.gen(p, 'class_member_declaration')
 
@@ -1068,7 +1067,8 @@ class ClassParser(BaseParser):
         varName = vdid.qualName[0]
 
         if len(vdid.qualName) != 1:
-            print("variable identifier expected instead of {} at line #{}".format(qualName, self.lexer.lineno))
+            print("variable identifier expected instead of {} at line #{}".
+                    format(vdid.qualName, self.lexer.lineno))
 
         # Err: check if type has been defined or not
         p[0].nodeType = self.resolveType(p[2], vdid)
