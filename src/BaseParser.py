@@ -2,6 +2,7 @@ import pydot
 import Node
 from TypeChecking import TypeChecking
 from copy import deepcopy
+from ThreeAddressCode import ThreeAddressCode
 
 
 class BaseParser(TypeChecking):
@@ -15,6 +16,7 @@ class BaseParser(TypeChecking):
 
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
+        self.TAC = ThreeAddressCode()
         self.ctr = 0
         self.currFile = ''
 
@@ -24,24 +26,24 @@ class BaseParser(TypeChecking):
             currTable[name] = {
                     'size': 0,
                     'desc': desc,
-                    'scope_name': name}
+                    'scope_name': name,
+                    'blockList': []}
 
         # allow abstract declaration for method
         elif desc != 'method':
             print('Multiple definitions for {} {} defined on line #{}'.format(
-                desc, name, self.lexer.lineno)
+                desc, name, self.lexer.lineno))
 
         self.symTabStack.append(currTable[name])
         # print('Adding new Table %d %s' % (len(self.symTabStack), currTable[name]['desc']))
 
     def appendNewScope(self, desc):
         currTable = self.symTabStack[-1]
-        if not currTable.get('blockList'):
-            currTable['blockList'] = []
 
         newTable={
             'size': currTable['size'],
-            'desc': desc}
+            'desc': desc,
+            'blockList': []}
 
         currTable['blockList'].append(newTable)
         self.symTabStack.append(newTable)
