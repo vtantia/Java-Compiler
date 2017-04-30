@@ -10,25 +10,40 @@ class ExpressionParser(BaseParser):
         '''expression : assignment_expression'''
         self.gen(p, 'expression')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_expression_not_name(self, p):
         '''expression_not_name : assignment_expression_not_name'''
         self.gen(p, 'expression_not_name')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_assignment_expression(self, p):
         '''assignment_expression : assignment
                                  | conditional_expression'''
         self.gen(p, 'assignment_expression')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_assignment_expression_not_name(self, p):
         '''assignment_expression_not_name : assignment
                                           | conditional_expression_not_name'''
         self.gen(p, 'assignment_expression_not_name')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_assignment(self, p):
         '''assignment : postfix_expression assignment_operator assignment_expression'''
         self.gen(p, 'assignment', self.binary(p))
         p[0].nodeType = deepcopy(p[1].nodeType)
         self.assign(self.mapping[p[2].astName], p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_assignment_operator(self, p):
         '''assignment_operator : '='
@@ -45,11 +60,17 @@ class ExpressionParser(BaseParser):
                                | XOR_ASSIGN'''
         self.gen(p, 'assignment_operator')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_conditional_expression(self, p):
         '''conditional_expression : conditional_or_expression
                                   | conditional_or_expression '?' expression ':' conditional_expression'''
         self.gen(p, 'conditional_expression')
         self.binary_exp_cond(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_conditional_expression_not_name(self, p):
         '''conditional_expression_not_name : conditional_or_expression_not_name
@@ -59,11 +80,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_cond(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_conditional_or_expression(self, p):
         '''conditional_or_expression : conditional_and_expression
                                      | conditional_or_expression OR conditional_and_expression'''
         self.gen(p, 'conditional_or_expression', self.binary(p))
         self.binary_exp_bool(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_conditional_or_expression_not_name(self, p):
         '''conditional_or_expression_not_name : conditional_and_expression_not_name
@@ -73,11 +100,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_bool(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_conditional_and_expression(self, p):
         '''conditional_and_expression : inclusive_or_expression
                                       | conditional_and_expression AND inclusive_or_expression'''
         self.gen(p, 'conditional_and_expression', self.binary(p))
         self.binary_exp_bool(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_conditional_and_expression_not_name(self, p):
         '''conditional_and_expression_not_name : inclusive_or_expression_not_name
@@ -87,11 +120,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_bool(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_inclusive_or_expression(self, p):
         '''inclusive_or_expression : exclusive_or_expression
                                    | inclusive_or_expression '|' exclusive_or_expression'''
         self.gen(p, 'inclusive_or_expression', self.binary(p))
         self.binary_exp_bitwise(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_inclusive_or_expression_not_name(self, p):
         '''inclusive_or_expression_not_name : exclusive_or_expression_not_name
@@ -101,11 +140,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_bitwise(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_exclusive_or_expression(self, p):
         '''exclusive_or_expression : and_expression
                                    | exclusive_or_expression '^' and_expression'''
         self.gen(p, 'exclusive_or_expression', self.binary(p))
         self.binary_exp_bitwise(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_exclusive_or_expression_not_name(self, p):
         '''exclusive_or_expression_not_name : and_expression_not_name
@@ -115,11 +160,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_bitwise(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_and_expression(self, p):
         '''and_expression : equality_expression
                           | and_expression '&' equality_expression'''
         self.gen(p, 'and_expression', self.binary(p))
         self.binary_exp_bitwise(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_and_expression_not_name(self, p):
         '''and_expression_not_name : equality_expression_not_name
@@ -129,12 +180,18 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_bitwise(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_equality_expression(self, p):
         '''equality_expression : instanceof_expression
                                | equality_expression EQ instanceof_expression
                                | equality_expression NEQ instanceof_expression'''
         self.gen(p, 'equality_expression', self.binary(p))
         self.binary_exp_rel(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_equality_expression_not_name(self, p):
         '''equality_expression_not_name : instanceof_expression_not_name
@@ -146,11 +203,17 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_rel(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_instanceof_expression(self, p):
         '''instanceof_expression : relational_expression
                                  | instanceof_expression INSTANCEOF reference_type'''
         self.gen(p, 'instanceof_expression', self.binary(p))
         self.binary_exp_rel(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_instanceof_expression_not_name(self, p):
         '''instanceof_expression_not_name : relational_expression_not_name
@@ -160,6 +223,9 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_rel(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_relational_expression(self, p):
         '''relational_expression : shift_expression
                                  | relational_expression '>' shift_expression
@@ -168,6 +234,9 @@ class ExpressionParser(BaseParser):
                                  | relational_expression LTEQ shift_expression'''
         self.gen(p, 'relational_expression', self.binary(p))
         self.binary_exp_rel(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_relational_expression_not_name(self, p):
         '''relational_expression_not_name : shift_expression_not_name
@@ -183,6 +252,9 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_rel(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_shift_expression(self, p):
         '''shift_expression : additive_expression
                             | shift_expression LSHIFT additive_expression
@@ -190,6 +262,9 @@ class ExpressionParser(BaseParser):
                             | shift_expression RRSHIFT additive_expression'''
         self.gen(p, 'shift_expression', self.binary(p))
         self.binary_exp_shift(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_shift_expression_not_name(self, p):
         '''shift_expression_not_name : additive_expression_not_name
@@ -203,12 +278,18 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_shift(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_additive_expression(self, p):
         '''additive_expression : multiplicative_expression
                                | additive_expression '+' multiplicative_expression
                                | additive_expression '-' multiplicative_expression'''
         self.gen(p, 'additive_expression', self.binary(p))
         self.binary_exp_addmult(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_additive_expression_not_name(self, p):
         '''additive_expression_not_name : multiplicative_expression_not_name
@@ -220,6 +301,9 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_addmult(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_multiplicative_expression(self, p):
         '''multiplicative_expression : unary_expression
                                      | multiplicative_expression '*' unary_expression
@@ -227,6 +311,9 @@ class ExpressionParser(BaseParser):
                                      | multiplicative_expression '%' unary_expression'''
         self.gen(p, 'multiplicative_expression', self.binary(p))
         self.binary_exp_addmult(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_multiplicative_expression_not_name(self, p):
         '''multiplicative_expression_not_name : unary_expression_not_name
@@ -240,6 +327,9 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[1])
         self.binary_exp_addmult(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_unary_expression(self, p):
         '''unary_expression : pre_increment_expression
                             | pre_decrement_expression
@@ -248,6 +338,9 @@ class ExpressionParser(BaseParser):
                             | unary_expression_not_plus_minus'''
         self.gen(p, 'unary_expression', self.unary(p))
         self.unary_exp_plus(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_unary_expression_not_name(self, p):
         '''unary_expression_not_name : pre_increment_expression
@@ -258,15 +351,24 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'unary_expression_not_name', self.unary(p))
         self.unary_exp_plus(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_pre_increment_expression(self, p):
         '''pre_increment_expression : PLUSPLUS unary_expression'''
         self.gen(p, 'pre_increment_expression', self.unary(p))
         self.unary_exp_post(self, p, 2)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_pre_decrement_expression(self, p):
         '''pre_decrement_expression : MINUSMINUS unary_expression'''
         self.gen(p, 'pre_decrement_expression', self.unary(p))
         self.unary_exp_post(self, p, 2)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_unary_expression_not_plus_minus(self, p):
         '''unary_expression_not_plus_minus : postfix_expression
@@ -276,6 +378,9 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'unary_expression_not_plus_minus', self.unary(p))
         self.unary_exp_nots(p)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_unary_expression_not_plus_minus_not_name(self, p):
         '''unary_expression_not_plus_minus_not_name : postfix_expression_not_name
                                                     | '~' unary_expression
@@ -283,6 +388,9 @@ class ExpressionParser(BaseParser):
                                                     | cast_expression'''
         self.gen(p, 'unary_expression_not_plus_minus_not_name', self.unary(p))
         self.unary_exp_nots(p)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_postfix_expression(self, p):
         '''postfix_expression : primary
@@ -292,27 +400,42 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'postfix_expression')
         self.resolveScope(p[1])
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_postfix_expression_not_name(self, p):
         '''postfix_expression_not_name : primary
                                        | post_increment_expression
                                        | post_decrement_expression'''
         self.gen(p, 'postfix_expression_not_name')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_post_increment_expression(self, p):
         '''post_increment_expression : postfix_expression PLUSPLUS'''
         self.gen(p, 'post_increment_expression', 2)
         self.unary_exp_post(p, 1)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_post_decrement_expression(self, p):
         '''post_decrement_expression : postfix_expression MINUSMINUS'''
         self.gen(p, 'post_decrement_expression', 2)
         self.unary_exp_post(p, 1)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_primary(self, p):
         '''primary : primary_no_new_array
                    | array_creation_with_array_initializer
                    | array_creation_without_array_initializer'''
         self.gen(p, 'primary')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_primary_no_new_array(self, p):
         '''primary_no_new_array : literal
@@ -331,6 +454,9 @@ class ExpressionParser(BaseParser):
                 print('Something is wrong with the symbol table at lineno #{}'.
                         format(self.lexer.lineno))
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_primary_no_new_array2(self, p):
         '''primary_no_new_array : '(' name ')'
                                 | '(' expression_not_name ')' '''
@@ -338,17 +464,29 @@ class ExpressionParser(BaseParser):
         self.resolveScope(p[2])
         p[0].nodeType = deepcopy(p[2].nodeType)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_dims_opt(self, p):
         '''dims_opt : dims'''
         self.gen(p, 'dims_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_dims_opt2(self, p):
         '''dims_opt : empty'''
         self.gen(p, 'dims_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_dims(self, p):
         '''dims : dims_loop'''
         self.gen(p, 'dims')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_dims_loop(self, p):
         '''dims_loop : one_dim_loop
@@ -357,10 +495,16 @@ class ExpressionParser(BaseParser):
         if len(p) == 3:
             p[0].nodeType.dim = p[1].nodeType.dim + p[2].nodeType.dim
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_one_dim_loop(self, p):
         '''one_dim_loop : '[' ']' '''
         self.gen(p, 'one_dim_loop')
         p[0].nodeType.dim = [0]
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_cast_expression(self, p):
         '''cast_expression : '(' primitive_type dims_opt ')' unary_expression'''
@@ -373,6 +517,9 @@ class ExpressionParser(BaseParser):
             print('Can\'t cast the the paramter on line #{} to {}'.format(
                 self.lexer.lineno, p[2].nodeType.baseType))
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
 
 class StatementParser(BaseParser):
 
@@ -381,45 +528,75 @@ class StatementParser(BaseParser):
         self.gen(p, 'block')
         self.endCurrScope()
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_seen_Lbrace(self, p):
         '''seen_Lbrace : empty'''
         self.appendNewScope('block')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_block_statements_opt(self, p):
         '''block_statements_opt : block_statements'''
         self.gen(p, 'block_statements_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_block_statements_opt2(self, p):
         '''block_statements_opt : empty'''
         self.gen(p, 'block_statements_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_block_statements(self, p):
         '''block_statements : block_statement
                             | block_statements block_statement'''
         self.gen(p, 'block_statements')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_block_statement(self, p):
         '''block_statement : local_variable_declaration_statement
                            | statement '''
         self.gen(p, 'block_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_local_variable_declaration_statement(self, p):
         '''local_variable_declaration_statement : local_variable_declaration ';' '''
         self.gen(p, 'local_variable_declaration_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_local_variable_declaration(self, p):
         '''local_variable_declaration : type variable_declarators'''
         self.gen(p, 'local_variable_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_local_variable_declaration2(self, p):
         '''local_variable_declaration : modifiers type variable_declarators'''
         self.gen(p, 'local_variable_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_variable_declarators(self, p):
         '''variable_declarators : variable_declarator
                                 | variable_declarators ',' variable_declarator'''
         self.gen(p, 'variable_declarators')
         p[0].nodeType = deepcopy(p[1].nodeType)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_variable_declarator(self, p):
         '''variable_declarator : variable_declarator_id
@@ -460,6 +637,9 @@ class StatementParser(BaseParser):
             if len(p) == 4:
                 self.checkTypeAssignment(p[0], p[3])
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_variable_declarator_id(self, p):
         '''variable_declarator_id : NAME dims_opt'''
         self.gen(p, 'variable_declarator_id')
@@ -467,12 +647,18 @@ class StatementParser(BaseParser):
         if p[2]:
             p[0].nodeType.dim = p[2].nodeType.dim
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_variable_initializer(self, p):
         '''variable_initializer : expression
                                 | array_initializer'''
         self.gen(p, 'variable_initializer')
         #  if not p[1].get('type'):
             #  assert False
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_statement(self, p):
         '''statement : statement_without_trailing_substatement
@@ -482,6 +668,9 @@ class StatementParser(BaseParser):
                      | while_statement
                      | for_statement'''
         self.gen(p, 'statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_statement_without_trailing_substatement(self, p):
         '''statement_without_trailing_substatement : block
@@ -495,9 +684,15 @@ class StatementParser(BaseParser):
                                                    | return_statement'''
         self.gen(p, 'statement_without_trailing_substatement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_expression_statement(self, p):
         '''expression_statement : statement_expression ';' '''
         self.gen(p, 'expression_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_statement_expression(self, p):
         '''statement_expression : assignment
@@ -509,10 +704,16 @@ class StatementParser(BaseParser):
                                 | class_instance_creation_expression'''
         self.gen(p, 'statement_expression')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_comma_opt(self, p):
         '''comma_opt : ','
                      | empty'''
         self.gen(p, 'comma_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_array_initializer(self, p):
         '''array_initializer : '{' comma_opt '}' '''
@@ -521,11 +722,17 @@ class StatementParser(BaseParser):
         p[0].nodeType.dim = [0]
         #  unknown data type and zero length of array
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_array_initializer2(self, p):
         '''array_initializer : '{' variable_initializers '}'
                              | '{' variable_initializers ',' '}' '''
         self.gen(p, 'array_initializer')
         p[0].nodeType = deepcopy(p[2].nodeType)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_variable_initializers(self, p):
         '''variable_initializers : variable_initializer
@@ -540,6 +747,9 @@ class StatementParser(BaseParser):
             else:
                 print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_method_invocation(self, p):
         '''method_invocation : NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
@@ -551,6 +761,9 @@ class StatementParser(BaseParser):
 
         if node_type:
             p[0].nodeType = deepcopy(node_type)
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_method_invocation2(self, p):
         '''method_invocation : name '.' NAME '(' argument_list_opt ')'
@@ -570,80 +783,134 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_labeled_statement(self, p):
         '''labeled_statement : label ':' statement'''
         self.gen(p, 'labeled_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_labeled_statement_no_short_if(self, p):
         '''labeled_statement_no_short_if : label ':' statement_no_short_if'''
         self.gen(p, 'labeled_statement_no_short_if')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_label(self, p):
         '''label : NAME'''
         self.gen(p, 'label')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_if_then_statement(self, p):
         '''if_then_statement : IF '(' expression ')' statement'''
         self.gen(p, 'if_then_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_if_then_else_statement(self, p):
         '''if_then_else_statement : IF '(' expression ')' statement_no_short_if ELSE statement'''
         self.gen(p, 'if_then_else_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_if_then_else_statement_no_short_if(self, p):
         '''if_then_else_statement_no_short_if : IF '(' expression ')' statement_no_short_if ELSE statement_no_short_if'''
         self.gen(p, 'if_then_else_statement_no_short_if')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_while_statement(self, p):
         '''while_statement : WHILE '(' expression ')' statement'''
         self.gen(p, 'while_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_while_statement_no_short_if(self, p):
         '''while_statement_no_short_if : WHILE '(' expression ')' statement_no_short_if'''
         self.gen(p, 'while_statement_no_short_if')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_seen_FOR(self, p):
         '''seen_FOR : empty'''
         self.appendNewScope('for')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_for_statement(self, p):
         '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
         self.gen(p, 'for_statement')
         self.endCurrScope()
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_for_statement_no_short_if(self, p):
         '''for_statement_no_short_if : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement_no_short_if'''
         self.gen(p, 'for_statement_no_short_if')
         self.endCurrScope()
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_for_init_opt(self, p):
         '''for_init_opt : for_init
                         | empty'''
         self.gen(p, 'for_init_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_for_init(self, p):
         '''for_init : statement_expression_list
                     | local_variable_declaration'''
         self.gen(p, 'for_init')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_statement_expression_list(self, p):
         '''statement_expression_list : statement_expression
                                      | statement_expression_list ',' statement_expression'''
         self.gen(p, 'statement_expression_list')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_expression_opt(self, p):
         '''expression_opt : expression
                           | empty'''
         self.gen(p, 'expression_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_for_update_opt(self, p):
         '''for_update_opt : for_update
                           | empty'''
         self.gen(p, 'for_update_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_for_update(self, p):
         '''for_update : statement_expression_list'''
         self.gen(p, 'for_update')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_statement_no_short_if(self, p):
         '''statement_no_short_if : statement_without_trailing_substatement
@@ -653,75 +920,126 @@ class StatementParser(BaseParser):
                                  | for_statement_no_short_if'''
         self.gen(p, 'statement_no_short_if')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_assert_statement(self, p):
         '''assert_statement : ASSERT expression ';'
                             | ASSERT expression ':' expression ';' '''
         self.gen(p, 'assert_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_empty_statement(self, p):
         '''empty_statement : ';' '''
         self.gen(p, 'empty_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_switch_statement(self, p):
         '''switch_statement : SWITCH '(' expression ')' switch_block'''
         self.gen(p, 'switch_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_switch_block(self, p):
         '''switch_block : '{' '}' '''
         self.gen(p, 'switch_block')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_switch_block2(self, p):
         '''switch_block : '{' switch_block_statements '}' '''
         self.gen(p, 'switch_block')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_switch_block3(self, p):
         '''switch_block : '{' switch_labels '}' '''
         self.gen(p, 'switch_block')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_switch_block4(self, p):
         '''switch_block : '{' switch_block_statements switch_labels '}' '''
         self.gen(p, 'switch_block')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_switch_block_statements(self, p):
         '''switch_block_statements : switch_block_statement
                                    | switch_block_statements switch_block_statement'''
         self.gen(p, 'switch_block_statements')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_switch_block_statement(self, p):
         '''switch_block_statement : switch_labels block_statements'''
         self.gen(p, 'switch_block_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_switch_labels(self, p):
         '''switch_labels : switch_label
                          | switch_labels switch_label'''
         self.gen(p, 'switch_labels')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_switch_label(self, p):
         '''switch_label : CASE constant_expression ':'
                         | DEFAULT ':' '''
         self.gen(p, 'switch_label')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_constant_expression(self, p):
         '''constant_expression : expression'''
         self.gen(p, 'constant_expression')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_do_statement(self, p):
         '''do_statement : DO statement WHILE '(' expression ')' ';' '''
         self.gen(p, 'do_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_break_statement(self, p):
         '''break_statement : BREAK ';'
                            | BREAK NAME ';' '''
         self.gen(p, 'break_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_continue_statement(self, p):
         '''continue_statement : CONTINUE ';'
                               | CONTINUE NAME ';' '''
         self.gen(p, 'continue_statement')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_return_statement(self, p):
         '''return_statement : RETURN expression_opt ';' '''
         self.gen(p, 'return_statement')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_instance_creation_expression(self, p):
         '''class_instance_creation_expression : NEW class_type '(' argument_list_opt ')' class_body_opt'''
@@ -738,10 +1056,16 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_body_opt(self, p):
         '''class_body_opt : class_body
                           | empty'''
         self.gen(p, 'class_body_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_field_access(self, p):
         '''field_access : primary '.' NAME'''
@@ -751,6 +1075,9 @@ class StatementParser(BaseParser):
 
         if data_node:
             p[0].nodeType = data_node
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_array_access(self, p):
         '''array_access : name '[' expression ']'
@@ -770,6 +1097,9 @@ class StatementParser(BaseParser):
         else:
             p[0].nodeType.dim = p[0].nodeType.dim[1:]
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_array_creation_with_array_initializer(self, p):
         '''array_creation_with_array_initializer : NEW primitive_type dim_with_or_without_exprs array_initializer
                                                  | NEW class_or_interface_type dim_with_or_without_exprs array_initializer'''
@@ -781,12 +1111,18 @@ class StatementParser(BaseParser):
             print('Type mismatch, Can\'t initialize the array at line #{}'.
                     format(self.lexer.lineno))
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_dim_with_or_without_exprs(self, p):
         '''dim_with_or_without_exprs : dim_with_or_without_expr
                                      | dim_with_or_without_exprs dim_with_or_without_expr'''
         self.gen(p, 'dim_with_or_without_exprs')
         if len(p) == 3:
             p[0].nodeType.dim = p[1].nodeType.dim + p[2].nodeType.dim
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_dim_with_or_without_expr(self, p):
         '''dim_with_or_without_expr : '[' expression ']'
@@ -800,12 +1136,18 @@ class StatementParser(BaseParser):
                 print('Not a valid array length type {}{} at line #{}'.format(
                     node_type.baseType, node_type.dim, self.lexer.lineno))
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_array_creation_without_array_initializer(self, p):
         '''array_creation_without_array_initializer : NEW primitive_type dim_with_or_without_exprs
                                                     | NEW class_or_interface_type dim_with_or_without_exprs'''
         self.gen(p, 'array_creation_without_array_initializer')
         p[0].nodeType.dim = deepcopy(p[3].nodeType.dim)
         p[0].nodeType.baseType = p[2].nodeType.baseType
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
 
 class NameParser(BaseParser):
@@ -816,15 +1158,25 @@ class NameParser(BaseParser):
         self.gen(p, 'name')
         p[0].astName = 'name'
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_simple_name(self, p):
         '''simple_name : NAME'''
         self.gen(p, 'simple_name')
         p[0].qualName = [p[0].astName]
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_qualified_name(self, p):
         '''qualified_name : name '.' simple_name'''
         self.gen(p, 'qualified_name')
         p[0].qualName = p[1].qualName + p[3].qualName
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
 
 class LiteralParser(BaseParser):
 
@@ -850,15 +1202,24 @@ class LiteralParser(BaseParser):
             print('Not a matching type at line #{}'.format(self.lexer.lineno))
         p[0].nodeType.baseType = litType
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_literal1(self, p):
         '''literal : CHAR_LITERAL'''
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'char'
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_literal2(self, p):
         '''literal : STRING_LITERAL'''
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'String'
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_literal3(self, p):
         '''literal : TRUE
@@ -866,10 +1227,17 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'boolean'
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_literal4(self, p):
         '''literal : NULL'''
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'null'
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
 
 class TypeParser(BaseParser):
 
@@ -877,14 +1245,23 @@ class TypeParser(BaseParser):
         '''modifiers_opt : modifiers'''
         self.gen(p, 'modifiers_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_modifiers_opt2(self, p):
         '''modifiers_opt : empty'''
         self.gen(p, 'modifiers_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_modifiers(self, p):
         '''modifiers : modifier
                      | modifiers modifier'''
         self.gen(p, 'modifiers')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_modifier(self, p):
         '''modifier : PUBLIC
@@ -899,10 +1276,16 @@ class TypeParser(BaseParser):
                     | STRICTFP'''
         self.gen(p, 'modifier')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_type(self, p):
         '''type : primitive_type
                 | reference_type'''
         self.gen(p, 'type')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_primitive_type(self, p):
         '''primitive_type : BOOLEAN
@@ -917,25 +1300,40 @@ class TypeParser(BaseParser):
         self.gen(p, 'primitive_type')
         p[0].nodeType.baseType = p[0].astName
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_reference_type(self, p):
         '''reference_type : class_or_interface_type
                           | array_type'''
         self.gen(p, 'reference_type')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_or_interface_type(self, p):
         '''class_or_interface_type : class_or_interface'''
         self.gen(p, 'class_or_interface_type')
         # Not implementing generic_type
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_type(self, p):
         '''class_type : class_or_interface_type'''
         self.gen(p, 'class_type')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_or_interface(self, p):
         '''class_or_interface : name'''
         self.gen(p, 'class_or_interface')
         p[0].nodeType.baseType = p[0].qualName[0]
         #  p[0]['type'] = p[0]['name']
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_array_type(self, p):
         '''array_type : primitive_type dims
@@ -946,50 +1344,84 @@ class TypeParser(BaseParser):
         p[0].nodeType.baseType = p[1].astName
         p[0].nodeType.dim = p[2].nodeType.dim
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
+
 class ClassParser(BaseParser):
 
     def p_type_declaration(self, p):
         '''type_declaration : class_declaration'''
         self.gen(p, 'type_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_type_declaration2(self, p):
         '''type_declaration : ';' '''
         self.gen(p, 'type_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_declaration(self, p):
         '''class_declaration : class_header class_body'''
         self.gen(p, 'class_declaration')
         self.endCurrScope()
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_header(self, p):
         '''class_header : class_header_name'''
         self.gen(p, 'class_header')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_header_name(self, p):
         '''class_header_name : class_header_name1'''
         self.gen(p, 'class_header_name')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
         self.startNewScope(p[3], 'class')
         self.gen(p, 'class_header_name1')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_body(self, p):
         '''class_body : '{' class_body_declarations_opt '}' '''
         self.gen(p, 'class_body')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_body_declarations_opt(self, p):
         '''class_body_declarations_opt : class_body_declarations'''
         self.gen(p, 'class_body_declarations_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_body_declarations_opt2(self, p):
         '''class_body_declarations_opt : empty'''
         self.gen(p, 'class_body_declarations_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_body_declarations(self, p):
         '''class_body_declarations : class_body_declaration
                                    | class_body_declarations class_body_declaration'''
         self.gen(p, 'class_body_declarations')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_body_declaration(self, p):
         '''class_body_declaration : class_member_declaration
@@ -997,37 +1429,61 @@ class ClassParser(BaseParser):
                                   | constructor_declaration'''
         self.gen(p, 'class_body_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_body_declaration2(self, p):
         '''class_body_declaration : block'''
         self.gen(p, 'class_body_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_class_member_declaration(self, p):
         '''class_member_declaration : field_declaration
                                     | method_declaration'''
         self.gen(p, 'class_member_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_class_member_declaration2(self, p):
         '''class_member_declaration : ';' '''
         self.gen(p, 'class_member_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_field_declaration(self, p):
         '''field_declaration : modifiers_opt type variable_declarators ';' '''
         self.gen(p, 'field_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_static_initializer(self, p):
         '''static_initializer : STATIC block'''
         self.gen(p, 'static_initializer')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_constructor_declaration(self, p):
         '''constructor_declaration : constructor_header method_body'''
         self.gen(p, 'constructor_declaration')
         self.endCurrScope()
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_constructor_header(self, p):
         '''constructor_header : constructor_header_name formal_parameter_list_opt ')' '''
         self.gen(p, 'constructor_header')
         currScope = self.symTabStack[-1]
         currScope['size'] = 0
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt NAME '(' '''
@@ -1038,18 +1494,30 @@ class ClassParser(BaseParser):
         currScope['type'] = Node.Type(baseType=name)
         currScope['size'] = -8
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_formal_parameter_list_opt(self, p):
         '''formal_parameter_list_opt : formal_parameter_list'''
         self.gen(p, 'formal_parameter_list_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_formal_parameter_list_opt2(self, p):
         '''formal_parameter_list_opt : empty'''
         self.gen(p, 'formal_parameter_list_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_formal_parameter_list(self, p):
         '''formal_parameter_list : formal_parameter
                                  | formal_parameter_list ',' formal_parameter'''
         self.gen(p, 'formal_parameter_list')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_formal_parameter(self, p):
         '''formal_parameter : modifiers_opt type variable_declarator_id
@@ -1096,9 +1564,15 @@ class ClassParser(BaseParser):
             # append in Parameter List
             currScope['parList'].append(varName)
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_method_body(self, p):
         '''method_body : '{' block_statements_opt '}' '''
         self.gen(p, 'method_body')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_method_declaration(self, p):
         '''method_declaration : abstract_method_declaration
@@ -1106,15 +1580,24 @@ class ClassParser(BaseParser):
         self.gen(p, 'method_declaration')
         self.endCurrScope()
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_abstract_method_declaration(self, p):
         '''abstract_method_declaration : method_header ';' '''
         self.gen(p, 'abstract_method_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_method_header(self, p):
         '''method_header : method_header_name formal_parameter_list_opt ')' method_header_extended_dims'''
         self.gen(p, 'method_header')
         currScope = self.symTabStack[-1]
         currScope['size'] = 0
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type NAME '(' '''
@@ -1125,17 +1608,29 @@ class ClassParser(BaseParser):
         currScope['type'] = p[2].nodeType
         self.gen(p, 'method_header_name')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_method_header_extended_dims(self, p):
         '''method_header_extended_dims : dims_opt'''
         self.gen(p, 'method_header_extended_dims')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_argument_list_opt(self, p):
         '''argument_list_opt : argument_list'''
         self.gen(p, 'argument_list_opt')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_argument_list_opt2(self, p):
         '''argument_list_opt : empty'''
         self.gen(p, 'argument_list_opt')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_argument_list(self, p):
         '''argument_list : expression
@@ -1146,53 +1641,90 @@ class ClassParser(BaseParser):
         else:
             p[0].nodeType = p[1].nodeType + [p[3].nodeType]
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
+
 class CompilationUnitParser(BaseParser):
 
     def p_compilation_unit(self, p):
         '''compilation_unit : package_declaration'''
         self.gen(p, 'compilation_unit')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_compilation_unit2(self, p):
         '''compilation_unit : package_declaration import_declarations'''
         self.gen(p, 'compilation_unit')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_compilation_unit3(self, p):
         '''compilation_unit : package_declaration import_declarations type_declarations'''
         self.gen(p, 'compilation_unit')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_compilation_unit4(self, p):
         '''compilation_unit : package_declaration type_declarations'''
         self.gen(p, 'compilation_unit')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_compilation_unit5(self, p):
         '''compilation_unit : import_declarations'''
         self.gen(p, 'compilation_unit')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_compilation_unit6(self, p):
         '''compilation_unit : type_declarations'''
         self.gen(p, 'compilation_unit')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_compilation_unit7(self, p):
         '''compilation_unit : import_declarations type_declarations'''
         self.gen(p, 'compilation_unit')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_compilation_unit8(self, p):
         '''compilation_unit : empty'''
         self.gen(p, 'compilation_unit')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_package_declaration(self, p):
         '''package_declaration : package_declaration_name ';' '''
         self.gen(p, 'package_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_package_declaration_name(self, p):
         '''package_declaration_name : modifiers PACKAGE name
                                     | PACKAGE name'''
         self.gen(p, 'package_declaration_name')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_import_declarations(self, p):
         '''import_declarations : import_declaration
                                | import_declarations import_declaration'''
         self.gen(p, 'import_declarations')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_import_declaration(self, p):
         '''import_declaration : single_type_import_declaration
@@ -1201,21 +1733,36 @@ class CompilationUnitParser(BaseParser):
                               | static_import_on_demand_declaration'''
         self.gen(p, 'import_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_single_type_import_declaration(self, p):
         '''single_type_import_declaration : IMPORT name ';' '''
         self.gen(p, 'single_type_import_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_type_import_on_demand_declaration(self, p):
         '''type_import_on_demand_declaration : IMPORT name '.' '*' ';' '''
         self.gen(p, 'type_import_on_demand_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_single_static_import_declaration(self, p):
         '''single_static_import_declaration : IMPORT STATIC name ';' '''
         self.gen(p, 'single_static_import_declaration')
 
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
+
     def p_static_import_on_demand_declaration(self, p):
         '''static_import_on_demand_declaration : IMPORT STATIC name '.' '*' ';' '''
         self.gen(p, 'static_import_on_demand_declaration')
+
+        if p[0]:
+            p[0].codeEnd = self.TAC.nextquad()
 
     def p_type_declarations(self, p):
         '''type_declarations : type_declaration
