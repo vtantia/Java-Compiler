@@ -6,3 +6,5 @@ parsetab.py
 graphs
 *.pyc
 *.class
+tags
+tests

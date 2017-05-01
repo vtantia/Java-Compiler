@@ -17,7 +17,7 @@ class ThreeAddressCode(object):
                 if toPatch[0][0] is not 'J':
                     print('Wrong Entry to patch: {}'.format(toPatch))
                 else:
-                    toPatch[1] = jumpAddress
+                    toPatch[1] = jumpAddress # Assuming jump address is always at first position for jump instructions
 
     def nextquad(self):
         return len(self.code)
