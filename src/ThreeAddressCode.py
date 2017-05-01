@@ -3,6 +3,7 @@ class ThreeAddressCode(object):
     def __init__(self):
         self.code = []
         self.curTempCnt = 0
+        self.data = []
 
     def emit(self, opCode, arg1=None, arg2=None, arg3=None):
         self.code += [[opCode, arg1, arg2, arg3]]
@@ -28,3 +29,13 @@ class ThreeAddressCode(object):
     def allotNewTemporary(self):
         self.curTempCnt += 1
         return 't' + str(self.curTempCnt)
+
+    def addDataString(self, val):
+        name = 'str' + str(len(self.data) + 1)
+        self.data.append(name + ': .ascii\t' + val)
+        return name
+
+    def addDataInt(self, val):
+        name = 'int' + str(len(self.data) + 1)
+        self.data.append(name + ': .word\t' + val)
+        return name

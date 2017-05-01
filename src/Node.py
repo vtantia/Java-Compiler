@@ -21,12 +21,13 @@ class Type(object):
 
 class Node(object):
     def __init__(self, astName, astNode, nodeType=None, qualName=[],
-            tacLists=None):
+            tacLists=None, temporary = -1):
         self.astName = astName
         self.astNode = astNode
         self.nodeType = nodeType if nodeType is not None else Type()
         self.qualName = qualName
         self.tacLists = tacLists if tacLists is not None else TacLists()
+        self.temporary = temporary # To store the temporary in which this node is present
 
     def isPrim(self):
         return self.nodeType.isPrim()

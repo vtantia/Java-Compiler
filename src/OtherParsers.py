@@ -1149,9 +1149,14 @@ class StatementParser(BaseParser):
         self.gen(p, 'field_access')
 
         data_node = self.findAttribute(p[1].nodeType, p[3].astName)
+        p[0].temporary = p[1].temporary
+
+        # if offset, then add to address
+        if data_node['offset']:
+            self.tac.emit('+', p[0].temporary, p[1].temporary, data_node['offset'])
 
         if data_node:
-            p[0].nodeType = data_node
+            p[0].nodeType = data_node['type']
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1161,10 +1166,7 @@ class StatementParser(BaseParser):
                         | primary_no_new_array '[' expression ']' '''
         self.gen(p, 'array_access')
         if p[1].astName == 'name':
-            node_type = self.findVar(p[1].qualName)
-
-            if node_type:
-                p[0].nodeType = deepcopy(node_type['type'])
+            self.resolveScope(p[1].qualName)
         else:
             p[0].nodeType = deepcopy(p[1].nodeType)
 
@@ -1172,6 +1174,20 @@ class StatementParser(BaseParser):
             print('Trying to dereference a non-array type variable {} on line #{}'.
                     format(p[1].qualName[-1], self.lexer.lineno))
         else:
+            unitSize = 1;
+            unitSize *= self.gst.get(p[1].nodeType.baseType)['size']
+            for i in range(1,len(p[1].nodeType.dim)):
+                # ensure we have the data for unit size
+                assert p[1].nodeType.dim[i]
+                unitSize *= p[1].nodeType.dim[i]
+
+            p[0].temporary = allotNewTemp()
+            self.tac.emit('addi', p[0].temporary,'$0', unitSize)
+            self.tac.emit('mul', p[3].temporary, p[0].temporary)
+            self.tac.emit('mflo', p[0].temporary)
+            self.tac.emit('add', p[0].temporary, p[1].temporary, 
+                    p[0].temporary)
+
             p[0].nodeType.dim = p[0].nodeType.dim[1:]
 
         if p[0]:
@@ -1182,7 +1198,7 @@ class StatementParser(BaseParser):
                                                  | NEW class_or_interface_type dim_with_or_without_exprs array_initializer'''
         self.gen(p, 'array_creation_with_array_initializer')
         p[0].nodeType.baseType = p[2].nodeType.baseType
-        p[0].nodeType.dim = deepcopy(p[3].nodeType.dim)
+        p[0].nodeType.dim = deepcopy(p[3].nodeType.dimwe have the data for unit size)
 
         if not self.checkTypeAssignment(p[0], p[4]):
             print('Type mismatch, Can\'t initialize the array at line #{}'.
@@ -1279,6 +1295,14 @@ class LiteralParser(BaseParser):
             print('Not a matching type at line #{}'.format(self.lexer.lineno))
         p[0].nodeType.baseType = litType
 
+        p[0].temporary = self.tac.allotNewTemp()
+        asciiVal = int(p[1].astName)
+        if abs(asciiVal) < 32768:
+            self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
+        else:
+            varName = self.tac.addDataInt(asciiVal)
+            self.tac.emit('loadaddress', p[0].temporary, varName)
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -1287,6 +1311,10 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'char'
 
+        p[0].temporary = self.tac.allotNewTemp()
+        asciiVal = ord(p[1].astName)
+        self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -1294,6 +1322,10 @@ class LiteralParser(BaseParser):
         '''literal : STRING_LITERAL'''
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'String'
+
+        p[0].temporary = self.tac.allotNewTemp()
+        varName = self.tac.addDataString(p[1].astName)
+        self.tac.emit('loadaddress', p[0].temporary, varName)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1304,6 +1336,10 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'boolean'
 
+        p[0].temporary = self.tac.allotNewTemp()
+        asciiVal = 1 if p[1].astName == 'true' else 0
+        self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -1311,6 +1347,9 @@ class LiteralParser(BaseParser):
         '''literal : NULL'''
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'null'
+
+        p[0].temporary = self.tac.allotNewTemp()
+        self.tac.emit('add', p[0].temporary, '$0', '$0')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1465,8 +1504,8 @@ class ClassParser(BaseParser):
 
     def p_class_header_name1(self, p):
         '''class_header_name1 : modifiers_opt CLASS NAME'''
-        self.startNewScope(p[3], 'class')
         self.gen(p, 'class_header_name1')
+        self.startNewScope(p[3].astName, 'class')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

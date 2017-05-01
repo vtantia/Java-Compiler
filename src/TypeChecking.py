@@ -59,7 +59,7 @@ class TypeChecking(object):
         p[0].nodeType = Node.Type(baseType='boolean')
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
-        if type1 != 'boolean' and type2 != 'boolean':
+        if type1 != 'boolean' or type2 != 'boolean':
             p[0].nodeType.baseType = 'integer'
             print('Conditional allowed only on boolean: {} at line #{}'.format(
                 p[0].astName, self.lexer.lineno))

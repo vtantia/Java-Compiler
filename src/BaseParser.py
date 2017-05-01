@@ -24,7 +24,7 @@ class BaseParser(TypeChecking):
         currTable = self.symTabStack[-1]
         if not currTable.get(name):
             currTable[name] = {
-                    'size': 0,
+                    'size': -4 if desc == 'class' else 0,
                     'desc': desc,
                     'scope_name': name,
                     'blockList': []}
@@ -52,6 +52,9 @@ class BaseParser(TypeChecking):
         # print('Removing a Table %d %s' % (len(self.symTabStack)-1,
             # self.symTabStack[-1]['desc']))
         currTable=self.symTabStack[-1]
+
+        if currTable['desc'] == 'class':
+            currTable['size'] += 4
 
         maxOffset=currTable['size']
         for block in currTable['blockList']:
@@ -131,6 +134,7 @@ class BaseParser(TypeChecking):
 
         return typeParent
 
+    # Returns symbol table entry for qualified name
     def findVar(self, var):
         toFind = var[0]
         err = False
@@ -171,13 +175,16 @@ class BaseParser(TypeChecking):
             return None
         else:
             return varEntry
-
+ 
     def resolveScope(self, var):
         if var.astName == 'name':
             var.astName = var.qualName[0]
             symTabEntry = self.findVar(var.qualName)
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
+                var.temporary = self.tac.allotNewTemporary()
+                self.tac.emit('mov', '$bp', var.temporary)
+                self.tac.emit('load', var.temporary, str(symTabEntry['offset']) + '($bp)' )
 
     def checkMethodInvocation(self, func, f_name, argList):
 

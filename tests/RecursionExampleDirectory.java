@@ -20,8 +20,10 @@ class Directory
 		int numFiles = (int)(123 * 10);
 		myFiles = new File[numFiles];
 
-		for(int i = 0; i < numFiles; i++)
+		for(int i = 0; i < numFiles; i++) {
 			myFiles[i] = new File( (int)(123 * 1000 ) );
+                        myFiles[i].iMySize = 1000;
+                }
 		for(int i = 0; i < numSubs; i++)
 			mySubs[i] = new Directory();
 	}
