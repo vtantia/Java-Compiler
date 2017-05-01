@@ -40,7 +40,6 @@ class TacLists(object):
         self.falseList = falseList
         self.contList = contList
         self.brkList = brkList
-        self.returnList = returnList
 
     def __add__(self, other):
         newLists = deepcopy(self)
@@ -49,6 +48,5 @@ class TacLists(object):
         newLists.falseList += other.falseList
         newLists.contList += other.contList
         newLists.brkList += other.brkList
-        newLists.returnList += other.returnList
 
         return newLists
