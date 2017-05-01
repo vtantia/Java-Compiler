@@ -16,7 +16,7 @@ class BaseParser(TypeChecking):
 
         self.symTabStack = [self.gst]
         self.ast = pydot.Dot(graph_type='digraph', ordering='out')
-        self.TAC = ThreeAddressCode()
+        self.tac = ThreeAddressCode()
         self.ctr = 0
         self.currFile = ''
 
