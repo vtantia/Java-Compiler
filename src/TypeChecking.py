@@ -245,8 +245,8 @@ class TypeChecking(object):
             flag, err = False, "Dimension mismatch error"
 
         # TODO Discuss
-        #  elif b.dim.count(0) == len(b.dim) and b.dim:
-            #  flag, err = False, "Array on RHS not initialized"
+        elif b.dim[1:].count(0) == len(b.dim[1:]) and b.dim[1:]:
+            flag, err = False, "Multidimensional array on RHS needs unit size"
 
         else:
             a.dim = b.dim

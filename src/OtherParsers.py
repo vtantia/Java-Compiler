@@ -11,7 +11,7 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'expression')
 
         self.tac.currTemporaryCnt = 0
-        p[0].temporary = self.tac.allotNewTemporary()
+        p[0].temporary = self.tac.allotNewTemp()
         self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
@@ -22,7 +22,7 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'expression_not_name')
 
         self.tac.currTemporaryCnt = 0
-        p[0].temporary = self.tac.allotNewTemporary()
+        p[0].temporary = self.tac.allotNewTemp()
         self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
@@ -406,7 +406,7 @@ class ExpressionParser(BaseParser):
                               | post_increment_expression
                               | post_decrement_expression'''
         self.gen(p, 'postfix_expression')
-        self.resolveScope(p[1])
+        self.resolveScope(p[0])
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -763,7 +763,7 @@ class StatementParser(BaseParser):
             p[0].nodeType.dim = [1] + p[0].nodeType.dim
         else:
             if p[1].nodeType.dim[1:] == p[3].nodeType.dim:
-                p[0].nodeType.dim = deepcopy(p[1].nodeType.dim)
+                p[0].nodeType = deepcopy(p[1].nodeType)
                 p[0].nodeType.dim[0] += 1
             else:
                 print('Arrays elements not of same type at line #{}'.format(self.lexer.lineno))
@@ -842,10 +842,10 @@ class StatementParser(BaseParser):
     def tacIf(self, p):
         self.tac.backpatch(p[3].tacLists.trueList, p[3].codeEnd)
         self.tac.backpatch(p[3].tacLists.falseList, p[6].codeEnd)
-        p[0].tacLists = p[5].tacLists + p[6].tacLists + p[8].tacLists + p[9].tacLists
+        p[0].tacLists = p[5].tacLists + p[6].tacLists + p[8].tacLists
 
     def p_if_then_else_statement(self, p):
-        '''if_then_else_statement : IF '(' expression ')' statement_no_short_if N ELSE statement N'''
+        '''if_then_else_statement : IF '(' expression ')' statement_no_short_if N ELSE statement'''
         self.gen(p, 'if_then_else_statement')
         self.tacIf(p)
 
@@ -853,7 +853,7 @@ class StatementParser(BaseParser):
             p[0].codeEnd = self.tac.nextquad()
 
     def p_if_then_else_statement_no_short_if(self, p):
-        '''if_then_else_statement_no_short_if : IF '(' expression ')' statement_no_short_if N ELSE statement_no_short_if N'''
+        '''if_then_else_statement_no_short_if : IF '(' expression ')' statement_no_short_if N ELSE statement_no_short_if'''
         self.gen(p, 'if_then_else_statement_no_short_if')
         self.tacIf(p)
 
@@ -1166,11 +1166,11 @@ class StatementParser(BaseParser):
                         | primary_no_new_array '[' expression ']' '''
         self.gen(p, 'array_access')
         if p[1].astName == 'name':
-            self.resolveScope(p[1].qualName)
-        else:
-            p[0].nodeType = deepcopy(p[1].nodeType)
+            self.resolveScope(p[1])
 
-        if not p[0].nodeType.dim:
+        p[0].nodeType = deepcopy(p[1].nodeType)
+
+        if not p[1].nodeType.dim:
             print('Trying to dereference a non-array type variable {} on line #{}'.
                     format(p[1].qualName[-1], self.lexer.lineno))
         else:
@@ -1181,11 +1181,11 @@ class StatementParser(BaseParser):
                 assert p[1].nodeType.dim[i]
                 unitSize *= p[1].nodeType.dim[i]
 
-            p[0].temporary = allotNewTemp()
+            p[0].temporary = self.tac.allotNewTemp()
             self.tac.emit('addi', p[0].temporary,'$0', unitSize)
             self.tac.emit('mul', p[3].temporary, p[0].temporary)
             self.tac.emit('mflo', p[0].temporary)
-            self.tac.emit('add', p[0].temporary, p[1].temporary, 
+            self.tac.emit('add', p[0].temporary, p[1].temporary,
                     p[0].temporary)
 
             p[0].nodeType.dim = p[0].nodeType.dim[1:]
@@ -1198,7 +1198,7 @@ class StatementParser(BaseParser):
                                                  | NEW class_or_interface_type dim_with_or_without_exprs array_initializer'''
         self.gen(p, 'array_creation_with_array_initializer')
         p[0].nodeType.baseType = p[2].nodeType.baseType
-        p[0].nodeType.dim = deepcopy(p[3].nodeType.dimwe have the data for unit size)
+        p[0].nodeType.dim = deepcopy(p[3].nodeType.dim)
 
         if not self.checkTypeAssignment(p[0], p[4]):
             print('Type mismatch, Can\'t initialize the array at line #{}'.
@@ -1228,6 +1228,9 @@ class StatementParser(BaseParser):
                     node_type, ifNode=False):
                 print('Not a valid array length type {}{} at line #{}'.format(
                     node_type.baseType, node_type.dim, self.lexer.lineno))
+            else:
+                if p[2].astName.isdigit():
+                    p[0].nodeType.dim[0] = int(p[2].astName)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

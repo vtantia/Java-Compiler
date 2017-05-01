@@ -26,7 +26,7 @@ class ThreeAddressCode(object):
     def nextquad(self):
         return len(self.code)
 
-    def allotNewTemporary(self):
+    def allotNewTemp(self):
         self.curTempCnt += 1
         return 't' + str(self.curTempCnt)
 

@@ -175,14 +175,14 @@ class BaseParser(TypeChecking):
             return None
         else:
             return varEntry
- 
+
     def resolveScope(self, var):
         if var.astName == 'name':
             var.astName = var.qualName[0]
             symTabEntry = self.findVar(var.qualName)
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
-                var.temporary = self.tac.allotNewTemporary()
+                var.temporary = self.tac.allotNewTemp()
                 self.tac.emit('mov', '$bp', var.temporary)
                 self.tac.emit('load', var.temporary, str(symTabEntry['offset']) + '($bp)' )
 
