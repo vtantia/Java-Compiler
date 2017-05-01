@@ -75,6 +75,9 @@ class BaseParser(TypeChecking):
         self.ast.add_node(p)
         return p
 
+    def makeMarkerNode(self):
+        return Node.Node('marker', self.createNode('marker'))
+
     def gen(self, p, name, index_ast=None):
         useful_wo_index = [i for i, item in enumerate(p) if item and i != index_ast]
         useful = useful_wo_index + [index_ast] if index_ast else useful_wo_index

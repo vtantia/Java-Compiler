@@ -10,12 +10,20 @@ class ExpressionParser(BaseParser):
         '''expression : assignment_expression'''
         self.gen(p, 'expression')
 
+        self.tac.currTemporaryCnt = 0
+        p[0].temporary = self.tac.allotNewTemporary()
+        self.tac.emit('move', p[1].temporary, p[0].temporary)
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_expression_not_name(self, p):
         '''expression_not_name : assignment_expression_not_name'''
         self.gen(p, 'expression_not_name')
+
+        self.tac.currTemporaryCnt = 0
+        p[0].temporary = self.tac.allotNewTemporary()
+        self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -523,6 +531,19 @@ class ExpressionParser(BaseParser):
 
 class StatementParser(BaseParser):
 
+    def p_M(self, p):
+        ''' M : empty '''
+        p[0] = self.makeMarkerNode()
+        p[0].codeEnd = self.tac.nextquad()
+
+    def p_N(self, p):
+        ''' N : empty '''
+        p[0] = self.makeMarkerNode()
+        p[0].tacLists.nextList = [self.tac.nextquad()]
+        self.tac.emit('JUMP')
+
+        p[0].codeEnd = self.tac.nextquad()
+
     def p_block(self, p):
         ''' block : '{' seen_Lbrace block_statements_opt '}' '''
         self.gen(p, 'block')
@@ -594,6 +615,7 @@ class StatementParser(BaseParser):
                                 | variable_declarators ',' variable_declarator'''
         self.gen(p, 'variable_declarators')
         p[0].nodeType = deepcopy(p[1].nodeType)
+        self.tac.currTemporaryCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -654,8 +676,6 @@ class StatementParser(BaseParser):
         '''variable_initializer : expression
                                 | array_initializer'''
         self.gen(p, 'variable_initializer')
-        #  if not p[1].get('type'):
-            #  assert False
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -668,6 +688,7 @@ class StatementParser(BaseParser):
                      | while_statement
                      | for_statement'''
         self.gen(p, 'statement')
+        self.tac.currTemporaryCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -808,36 +829,57 @@ class StatementParser(BaseParser):
             p[0].codeEnd = self.tac.nextquad()
 
     def p_if_then_statement(self, p):
-        '''if_then_statement : IF '(' expression ')' statement'''
+        '''if_then_statement : IF '(' expression ')' statement N'''
         self.gen(p, 'if_then_statement')
+
+        self.tac.backpatch(p[3].tacLists.trueList, p[3].codeEnd)
+        p[0].tacLists = deepcopy(p[5].tacLists)
+        p[0].tacLists.nextList += p[3].tacLists.falseList + p[6].tacLists.nextList
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
+    def tacIf(self, p):
+        self.tac.backpatch(p[3].tacLists.trueList, p[3].codeEnd)
+        self.tac.backpatch(p[3].tacLists.falseList, p[6].codeEnd)
+        p[0].tacLists = p[5].tacLists + p[6].tacLists + p[8].tacLists + p[9].tacLists
+
     def p_if_then_else_statement(self, p):
-        '''if_then_else_statement : IF '(' expression ')' statement_no_short_if ELSE statement'''
+        '''if_then_else_statement : IF '(' expression ')' statement_no_short_if N ELSE statement N'''
         self.gen(p, 'if_then_else_statement')
+        self.tacIf(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_if_then_else_statement_no_short_if(self, p):
-        '''if_then_else_statement_no_short_if : IF '(' expression ')' statement_no_short_if ELSE statement_no_short_if'''
+        '''if_then_else_statement_no_short_if : IF '(' expression ')' statement_no_short_if N ELSE statement_no_short_if N'''
         self.gen(p, 'if_then_else_statement_no_short_if')
+        self.tacIf(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
+    def tacWhile(self, p):
+        W, M, E, S, N = p[0], p[2], p[4], p[6], p[7]
+        self.tac.backpatch(E.tacLists.trueList, E.codeEnd)
+        self.tac.backpatch(S.tacLists.nextList + N.tacLists.nextList,
+                M.codeEnd)
+        self.tac.backpatch(S.tacLists.contList, M.codeEnd)
+        S.tacLists.nextList = E.tacLists.falseList + S.tacLists.brkList
+
     def p_while_statement(self, p):
-        '''while_statement : WHILE '(' expression ')' statement'''
+        '''while_statement : WHILE M '(' expression ')' statement N'''
         self.gen(p, 'while_statement')
+        self.tacWhile(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_while_statement_no_short_if(self, p):
-        '''while_statement_no_short_if : WHILE '(' expression ')' statement_no_short_if'''
+        '''while_statement_no_short_if : WHILE M '(' expression ')' statement_no_short_if N'''
         self.gen(p, 'while_statement_no_short_if')
+        self.tacWhile(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -849,18 +891,30 @@ class StatementParser(BaseParser):
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
+    def tacFor(self, p):
+        F, S1, C, S2, N2, S3, N3 = p[0], p[4], p[6], p[8], p[9], p[11], p[12]
+
+        F.tacLists.nextList = C.tacLists.falseList + S3.tacLists.brkList
+        self.tac.backpatch(S1.tacLists.nextList, S1.codeEnd)
+        self.tac.backpatch(S2.tacLists.nextList + N2.tacLists.nextList, S1.codeEnd)
+        self.tac.backpatch(S3.tacLists.nextList + N3.tacLists.nextList + S3.tacLists.contList,
+                C.codeEnd)
+        self.tac.backpatch(C.tacLists.trueList, N2.codeEnd)
+
     def p_for_statement(self, p):
-        '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement'''
+        '''for_statement : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt N ')' statement N'''
         self.gen(p, 'for_statement')
         self.endCurrScope()
+        self.tacFor(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_for_statement_no_short_if(self, p):
-        '''for_statement_no_short_if : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt ')' statement_no_short_if'''
+        '''for_statement_no_short_if : FOR seen_FOR '(' for_init_opt ';' expression_opt ';' for_update_opt N ')' statement_no_short_if N'''
         self.gen(p, 'for_statement_no_short_if')
         self.endCurrScope()
+        self.tacFor(p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -885,6 +939,8 @@ class StatementParser(BaseParser):
         '''statement_expression_list : statement_expression
                                      | statement_expression_list ',' statement_expression'''
         self.gen(p, 'statement_expression_list')
+
+        self.tac.currTemporaryCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -941,6 +997,10 @@ class StatementParser(BaseParser):
     def p_switch_statement(self, p):
         '''switch_statement : SWITCH '(' expression ')' switch_block'''
         self.gen(p, 'switch_statement')
+
+        # p[0].tacLists = deepcopy(p[5].tacLists)
+        # p[0].tacLists.nextList = p[5].tacLists.nextList + p[5].tacLists.brkList
+        # p[0].tacLists.brkList = []
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1012,8 +1072,15 @@ class StatementParser(BaseParser):
             p[0].codeEnd = self.tac.nextquad()
 
     def p_do_statement(self, p):
-        '''do_statement : DO statement WHILE '(' expression ')' ';' '''
+        '''do_statement : DO M statement WHILE '(' expression ')' ';' '''
         self.gen(p, 'do_statement')
+
+        D, M, S, E = p[0], p[2], p[3], p[6]
+
+        self.tac.backpatch(S.tacLists.nextList + S.tacLists.contList,
+                S.codeEnd)
+        self.tac.backpatch(E.tacLists.trueList, M.codeEnd)
+        D.tacLists.nextList = E.tacLists.falseList + S.tacLists.brkList
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1023,6 +1090,9 @@ class StatementParser(BaseParser):
                            | BREAK NAME ';' '''
         self.gen(p, 'break_statement')
 
+        p[0].tacLists.brkList = [self.tac.nextquad()]
+        self.tac.emit('JMP')
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -1031,12 +1101,19 @@ class StatementParser(BaseParser):
                               | CONTINUE NAME ';' '''
         self.gen(p, 'continue_statement')
 
+        p[0].tacLists.contList = [self.tac.nextquad()]
+        self.tac.emit('JMP')
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_return_statement(self, p):
         '''return_statement : RETURN expression_opt ';' '''
         self.gen(p, 'return_statement')
+
+        if p[2]:
+            self.tac.emit('MOVE', '$2', p[2].temporary)
+        self.tac.emit('JR', 31)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1640,6 +1717,8 @@ class ClassParser(BaseParser):
             p[0].nodeType = [p[0].nodeType]
         else:
             p[0].nodeType = p[1].nodeType + [p[3].nodeType]
+
+        self.tac.currTemporaryCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

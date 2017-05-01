@@ -33,6 +33,7 @@
     generic types
     enhanced for statement
     interace, annotation, enumeration
+    switch, assert, labelled statement
 
 
 fix TypeParser rules
