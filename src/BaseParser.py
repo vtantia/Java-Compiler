@@ -184,7 +184,7 @@ class BaseParser(TypeChecking):
                 var.nodeType = symTabEntry['type']
                 var.temporary = self.tac.allotNewTemp()
                 self.tac.emit('mov', '$bp', var.temporary)
-                self.tac.emit('load', var.temporary, str(symTabEntry['offset']) + '($bp)' )
+                self.tac.emit('load', var.temporary, str(-symTabEntry['offset']) + '($bp)' )
 
     def checkMethodInvocation(self, func, f_name, argList):
 

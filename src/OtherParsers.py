@@ -10,9 +10,10 @@ class ExpressionParser(BaseParser):
         '''expression : assignment_expression'''
         self.gen(p, 'expression')
 
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
         p[0].temporary = self.tac.allotNewTemp()
-        self.tac.emit('move', p[1].temporary, p[0].temporary)
+        if p[1].temporary != p[0].temporary:
+            self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -21,9 +22,10 @@ class ExpressionParser(BaseParser):
         '''expression_not_name : assignment_expression_not_name'''
         self.gen(p, 'expression_not_name')
 
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
         p[0].temporary = self.tac.allotNewTemp()
-        self.tac.emit('move', p[1].temporary, p[0].temporary)
+        if p[1].temporary != p[0].temporary:
+            self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -615,7 +617,7 @@ class StatementParser(BaseParser):
                                 | variable_declarators ',' variable_declarator'''
         self.gen(p, 'variable_declarators')
         p[0].nodeType = deepcopy(p[1].nodeType)
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -688,7 +690,7 @@ class StatementParser(BaseParser):
                      | while_statement
                      | for_statement'''
         self.gen(p, 'statement')
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -940,7 +942,7 @@ class StatementParser(BaseParser):
                                      | statement_expression_list ',' statement_expression'''
         self.gen(p, 'statement_expression_list')
 
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1760,7 +1762,7 @@ class ClassParser(BaseParser):
         else:
             p[0].nodeType = p[1].nodeType + [p[3].nodeType]
 
-        self.tac.currTemporaryCnt = 0
+        self.tac.curTempCnt = 0
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
