@@ -542,7 +542,7 @@ class StatementParser(BaseParser):
         ''' N : empty '''
         p[0] = self.makeMarkerNode()
         p[0].tacLists.nextList = [self.tac.nextquad()]
-        self.tac.emit('JUMP')
+        self.tac.emit('JMP')
 
         p[0].codeEnd = self.tac.nextquad()
 
@@ -1115,7 +1115,9 @@ class StatementParser(BaseParser):
 
         if p[2]:
             self.tac.emit('MOVE', '$2', p[2].temporary)
-        self.tac.emit('JR', 31)
+
+        self.tac.emit('loadaddress', '$31', '4($30)')
+        self.tac.emit('JR', '$31')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1303,10 +1305,11 @@ class LiteralParser(BaseParser):
         p[0].temporary = self.tac.allotNewTemp()
         asciiVal = int(p[1].astName)
         if abs(asciiVal) < 32768:
+            # OPT
             self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
         else:
             varName = self.tac.addDataInt(asciiVal)
-            self.tac.emit('loadaddress', p[0].temporary, varName)
+            self.tac.emit('loadword', p[0].temporary, varName)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
