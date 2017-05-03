@@ -21,7 +21,7 @@ class Type(object):
 
 class Node(object):
     def __init__(self, astName, astNode, nodeType=None, qualName=[],
-            tacLists=None, temporary = -1):
+            tacLists=None, temporary = ''):
         self.astName = astName
         self.astNode = astNode
         self.nodeType = nodeType if nodeType is not None else Type()

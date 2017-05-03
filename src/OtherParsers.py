@@ -10,22 +10,12 @@ class ExpressionParser(BaseParser):
         '''expression : assignment_expression'''
         self.gen(p, 'expression')
 
-        self.tac.curTempCnt = 0
-        p[0].temporary = self.tac.allotNewTemp()
-        if p[1].temporary != p[0].temporary:
-            self.tac.emit('move', p[1].temporary, p[0].temporary)
-
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_expression_not_name(self, p):
         '''expression_not_name : assignment_expression_not_name'''
         self.gen(p, 'expression_not_name')
-
-        self.tac.curTempCnt = 0
-        p[0].temporary = self.tac.allotNewTemp()
-        if p[1].temporary != p[0].temporary:
-            self.tac.emit('move', p[1].temporary, p[0].temporary)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -647,12 +637,9 @@ class StatementParser(BaseParser):
             lastTable[varName]['type'] = p[0].nodeType
             lastTable[varName]['lineNo'] = self.lexer.lineno
 
-            # If a primitive data type, then get size from the GST
+            # If a primitive data type, align it with 4 byte space
             # else allocate on heap and store pointer
             lastTable[varName]['size'] = 4
-            if self.gst.get(p[0].nodeType.baseType):
-                if self.gst[p[0].nodeType.baseType]['desc'] == 'primitive_type':
-                    lastTable[varName]['size'] = self.gst[p[0].nodeType.baseType]['size']
 
             # set offset for new variable(s) and update the offset value in symbol table
             lastTable[varName]['offset'] = lastTable['size'] + lastTable[varName]['size']
@@ -785,6 +772,11 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
+        if p[3]:
+            self.tac.methodInvocation(p[3].tempList)
+
+        self.tac.emit('jal', func['funcLabel'])
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -805,6 +797,8 @@ class StatementParser(BaseParser):
 
         if node_type:
             p[0].nodeType = deepcopy(node_type)
+
+        self.tac.emit('jal', func['funcLabel'])
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1113,11 +1107,20 @@ class StatementParser(BaseParser):
         '''return_statement : RETURN expression_opt ';' '''
         self.gen(p, 'return_statement')
 
-        if p[2]:
-            self.tac.emit('MOVE', '$2', p[2].temporary)
+        if not p[2]:
+            retType = Node.Type(baseType='void')
+        else:
+            retType = p[2].nodeType
 
-        self.tac.emit('loadaddress', '$31', '4($30)')
-        self.tac.emit('JR', '$31')
+        funcScope = self.symTabStack[2]
+
+        if not self.checkTypeAssignment(funcScope['type'], retType, ifNode=False):
+            print('Invalid return type on line #{}'.format(self.lexer.lineno))
+
+        if p[2]:
+            self.tac.emit('mov', '$v0', p[2].temporary)
+
+        self.tac.returnFunc()
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1136,6 +1139,8 @@ class StatementParser(BaseParser):
 
         if node_type:
             p[0].nodeType = deepcopy(node_type)
+
+        self.tac.emit('jal', construct['funcLabel'])
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1157,7 +1162,8 @@ class StatementParser(BaseParser):
 
         # if offset, then add to address
         if data_node['offset']:
-            self.tac.emit('+', p[0].temporary, p[1].temporary, data_node['offset'])
+            self.tac.emit('addi', p[0].temporary, p[1].temporary, data_node['offset'])
+            self.tac.emit('lw', p[0].temporary, '(' + p[0].temporary + ')')
 
         if data_node:
             p[0].nodeType = data_node['type']
@@ -1169,6 +1175,7 @@ class StatementParser(BaseParser):
         '''array_access : name '[' expression ']'
                         | primary_no_new_array '[' expression ']' '''
         self.gen(p, 'array_access')
+
         if p[1].astName == 'name':
             self.resolveScope(p[1])
 
@@ -1178,8 +1185,7 @@ class StatementParser(BaseParser):
             print('Trying to dereference a non-array type variable {} on line #{}'.
                     format(p[1].qualName[-1], self.lexer.lineno))
         else:
-            unitSize = 1;
-            unitSize *= self.gst.get(p[1].nodeType.baseType)['size']
+            unitSize = 4
             for i in range(1,len(p[1].nodeType.dim)):
                 # ensure we have the data for unit size
                 assert p[1].nodeType.dim[i]
@@ -1191,6 +1197,9 @@ class StatementParser(BaseParser):
             self.tac.emit('mflo', p[0].temporary)
             self.tac.emit('add', p[0].temporary, p[1].temporary,
                     p[0].temporary)
+
+            if len(p[1].nodeType.dim) == 1:
+                self.tac.emit('lw', p[0].temporary, '(' + p[0].temporary + ')')
 
             p[0].nodeType.dim = p[0].nodeType.dim[1:]
 
@@ -1309,7 +1318,7 @@ class LiteralParser(BaseParser):
             self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
         else:
             varName = self.tac.addDataInt(asciiVal)
-            self.tac.emit('loadword', p[0].temporary, varName)
+            self.tac.emit('lw', p[0].temporary, varName)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1333,7 +1342,7 @@ class LiteralParser(BaseParser):
 
         p[0].temporary = self.tac.allotNewTemp()
         varName = self.tac.addDataString(p[1].astName)
-        self.tac.emit('loadaddress', p[0].temporary, varName)
+        self.tac.emit('la', p[0].temporary, varName)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1595,7 +1604,10 @@ class ClassParser(BaseParser):
     def p_constructor_declaration(self, p):
         '''constructor_declaration : constructor_header method_body'''
         self.gen(p, 'constructor_declaration')
+        currScope = self.symTabStack[-1]
+
         self.endCurrScope()
+        self.tac.code[currScope['sizePatch']][3] = currScope['size']
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1603,8 +1615,7 @@ class ClassParser(BaseParser):
     def p_constructor_header(self, p):
         '''constructor_header : constructor_header_name formal_parameter_list_opt ')' '''
         self.gen(p, 'constructor_header')
-        currScope = self.symTabStack[-1]
-        currScope['size'] = 0
+        self.startNewMethodDef2()
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1612,11 +1623,10 @@ class ClassParser(BaseParser):
     def p_constructor_header_name(self, p):
         '''constructor_header_name : modifiers_opt NAME '(' '''
         self.gen(p, 'constructor_header_name')
+
         name = p[2].astName
         self.startNewScope(name, 'constructor')
-        currScope = self.symTabStack[-1]
-        currScope['type'] = Node.Type(baseType=name)
-        currScope['size'] = -8
+        self.startNewMethodDef(name, Node.Type(baseType=name))
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1675,10 +1685,9 @@ class ClassParser(BaseParser):
             currScope[varName]['type'] = p[0].nodeType
             currScope[varName]['lineNo'] = self.lexer.lineno
 
+            # if primitive_type, then align in 4 bytes
+            # else get pointer on heap
             currScope[varName]['size'] = 4
-            if self.gst.get(p[0].nodeType.baseType):
-                if self.gst[p[0].nodeType.baseType]['desc'] == 'primitive_type':
-                    currScope[varName]['size'] = max(4, self.gst[p[0].nodeType.baseType]['size'])
 
             # set offset for new variable(s) and update the offset value in symbol table
             # Negative offset, as according to function stack
@@ -1702,7 +1711,12 @@ class ClassParser(BaseParser):
         '''method_declaration : abstract_method_declaration
                               | method_header method_body'''
         self.gen(p, 'method_declaration')
+        currScope = self.symTabStack[-1]
+
+        self.tac.returnFunc()
+
         self.endCurrScope()
+        self.tac.code[currScope['sizePatch']][3] = currScope['size']
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1717,21 +1731,18 @@ class ClassParser(BaseParser):
     def p_method_header(self, p):
         '''method_header : method_header_name formal_parameter_list_opt ')' method_header_extended_dims'''
         self.gen(p, 'method_header')
-        currScope = self.symTabStack[-1]
-        currScope['size'] = 0
+        self.startNewMethodDef2()
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
     def p_method_header_name(self, p):
         '''method_header_name : modifiers_opt type NAME '(' '''
-        name = p[3]
-        self.startNewScope(name, 'method')
-        currScope = self.symTabStack[-1]
-        currScope['size'] = -8
-        currScope['type'] = p[2].nodeType
-        currScope['tacStart'] = self.tac.nextquad()
         self.gen(p, 'method_header_name')
+
+        name = p[3].astName
+        self.startNewScope(name, 'method')
+        self.startNewMethodDef(name, p[2].nodeType)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1763,10 +1774,10 @@ class ClassParser(BaseParser):
         self.gen(p, 'argument_list')
         if len(p) == 2:
             p[0].nodeType = [p[0].nodeType]
+            p[0].tempList = [p[0].temporary]
         else:
             p[0].nodeType = p[1].nodeType + [p[3].nodeType]
-
-        self.tac.curTempCnt = 0
+            p[0].tempList = p[1].tempList + [p[3].temporary]
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

@@ -183,40 +183,41 @@ class BaseParser(TypeChecking):
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
                 var.temporary = self.tac.allotNewTemp()
-                self.tac.emit('mov', '$bp', var.temporary)
-                self.tac.emit('load', var.temporary, str(-symTabEntry['offset']) + '($bp)' )
+                self.tac.emit('lw', var.temporary, str(-symTabEntry['offset']) + '($bp)' )
 
     def checkMethodInvocation(self, func, f_name, argList):
 
-        if func:
-            desc = func.get('desc')
-            parList = func.get('parList')
-            if not parList:
-                parList = []
-            if desc != 'method' and desc != 'constructor':
-                print('On line #{}, {} is not a function'.format(
-                    self.lexer.lineno, f_name))
-                return False
-            elif len(parList) == len(argList):
-                for i in range(0, len(parList)):
+        if not func:
+            return False
 
-                    expected_type = func[parList[i]]['type']
-                    argument_type = argList[i]
+        desc = func.get('desc')
+        parList = func.get('parList')
+        if not parList:
+            parList = []
+        if desc != 'method' and desc != 'constructor':
+            print('On line #{}, {} is not a function'.format(
+                self.lexer.lineno, f_name))
+            return False
+        elif len(parList) == len(argList):
+            for i in range(0, len(parList)):
 
-                    if not self.checkTypeAssignment(expected_type, argument_type, ifNode=False):
+                expected_type = func[parList[i]]['type']
+                argument_type = argList[i]
 
-                        print('Incompatible argument type passed to method {} at line #{}'.
-                                format(f_name, self.lexer.lineno))
-                        print('for parameter {}, Expected type: {} {}, argument type: {} {}'.
-                            format(parList[i], expected_type.baseType, len(expected_type.dim),
-                                    argument_type.baseType, len(argument_type.dim)))
+                if not self.checkTypeAssignment(expected_type, argument_type, ifNode=False):
 
-                return func['type']
-            else:
-                print('method {} requires {} arguments, passed {} on line #{}'.
-                        format(f_name, len(func['parList']), len(argList), self.lexer.lineno))
+                    print('Incompatible argument type passed to method {} at line #{}'.
+                            format(f_name, self.lexer.lineno))
+                    print('for parameter {}, Expected type: {} {}, argument type: {} {}'.
+                        format(parList[i], expected_type.baseType, len(expected_type.dim),
+                                argument_type.baseType, len(argument_type.dim)))
 
-                return False
+            return func['type']
+        else:
+            print('method {} requires {} arguments, passed {} on line #{}'.
+                    format(f_name, len(func['parList']), len(argList), self.lexer.lineno))
+
+            return False
 
     def findAttribute(self, node_type, attribute):
         err=False
@@ -239,3 +240,27 @@ class BaseParser(TypeChecking):
             return False
         else:
             return varEntry
+
+    # Following functions are common to both method and constructor
+    def startNewMethodDef(self, name, retType):
+        currScope = self.symTabStack[-1]
+        currScope['type'] = retType
+        currScope['size'] = -8
+        currScope['funcLabel'] = self.tac.getLabelFunc(name)
+
+    def startNewMethodDef2(self):
+        currScope = self.symTabStack[-1]
+
+        currScope['sizeParams'] = - (currScope['size'] + 8)
+        currScope['size'] = 0
+
+        # Push return address, save bp and copy sp to bp
+        self.tac.emit('subi', '$sp', '$sp', 8)
+        self.tac.emit('sw', '$31', '4($sp)')
+        self.tac.emit('sw', '$30', '($sp)')
+        self.tac.emit('mov', '$30', '$sp')
+
+        # Will be later patched when the size is computed
+        # stack offset for this method's local variable
+        currScope['sizePatch'] = self.tac.nextquad()
+        self.tac.emit('subi', '$sp', '$sp')

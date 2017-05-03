@@ -10,13 +10,7 @@ class ThreeAddressCode(object):
         self.code += [[opCode, arg1, arg2, arg3]]
 
     def backpatch(self, bpList, jumpAddress, label=None):
-        if self.labelMap.get(label):
-            if self.labelMap[label] != jumpAddress:
-                label = None
-
-        if not label:
-            label = 'label' + str(len(self.labelMap))
-        self.labelMap[label] = jumpAddress
+        label = self.getLabel(label, jumpAddress)
 
         for lineNo in bpList:
             if not isinstance(lineNo, int):
@@ -31,6 +25,25 @@ class ThreeAddressCode(object):
                     # Assuming jump address is always at first position for
                     # jump instructions
                     toPatch[1] = label
+
+    def getLabel(self, label, jumpAddress):
+        if self.labelMap.get(label):
+            if self.labelMap[label] != jumpAddress:
+                label = None
+
+        if not label:
+            label = 'label' + str(len(self.labelMap))
+        self.labelMap[label] = jumpAddress
+        return label
+
+    def getLabelFunc(self, label):
+        assert label
+        i = 1
+        while self.labelMap.get(label + str(i)):
+            i += 1
+
+        self.labelMap[label + str(i)] = self.nextquad()
+        return label + str(i)
 
     def nextquad(self):
         return len(self.code)
@@ -48,3 +61,17 @@ class ThreeAddressCode(object):
         name = 'int' + str(len(self.data) + 1)
         self.data.append(name + ': .word\t' + val)
         return name
+
+    def returnFunc(self):
+        self.emit('mov', '$sp', '$30')
+        self.emit('lw', '$30', '($sp)')
+        self.emit('lw', '$31', '4($sp)')
+        self.emit('addi', '$sp', '$sp', 8)
+        self.emit('JR', '$31')
+
+    def methodInvocation(self, tempList):
+        if tempList:
+            self.emit('subi', '$sp', '$sp', 4*len(tempList))
+
+        for i in range(0, len(tempList)):
+            self.emit('mov', tempList[i], str(4*i) + '($sp)')
