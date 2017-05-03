@@ -38,7 +38,7 @@ class ThreeAddressCode(object):
 
     def getLabelFunc(self, label):
         assert label
-        i = 1
+        i = 0
         while self.labelMap.get(label + str(i)):
             i += 1
 
@@ -85,12 +85,12 @@ class ThreeAddressCode(object):
     # Used for constructor
     def commonInvocation(self, pObj, pArg, func):
         if pArg:
-            self.tac.pushParams([pObj.temporary] + pArg.tempList)
+            self.pushParams([pObj.temporary] + pArg.tempList)
         else:
-            self.tac.pushParams([pObj.temporary])
+            self.pushParams([pObj.temporary])
 
-        self.tac.emit('jal', func['funcLabel'])
-        self.tac.emit('nop')
+        self.emit('jal', func['funcLabel'])
+        self.emit('nop')
 
     def methodInvocation(self, pObj, pArg, func):
         self.commonInvocation(pObj, pArg, func)

@@ -264,3 +264,17 @@ class BaseParser(TypeChecking):
         # stack offset for this method's local variable
         currScope['sizePatch'] = self.tac.nextquad()
         self.tac.emit('subi', '$sp', '$sp')
+
+    def getMainSize(self):
+        flag = False
+        mainSize = 0
+
+        for key in self.gst:
+            if isinstance(self.gst[key], dict) and self.gst[key].get('main'):
+                if flag:
+                    print('Multiple main functions defined')
+
+                flag = True
+                mainSize = self.gst[key]['size']
+
+        return mainSize

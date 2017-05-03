@@ -17,6 +17,61 @@ def handle_errors(argv):
         print('file \'{}\' does not exists'.format(argv[2]))
         exit()
 
+def makeExecutable(data, code, labelMap, mallocSize):
+    print(labelMap)
+    revMap = {}
+    for label in labelMap:
+        line = labelMap[label]
+        if not revMap.get(line):
+            revMap[line] = []
+
+        revMap[line] += [label]
+
+    prefixCode1 = [['li', '$v0', 9, None],
+                ['li', '$a0', mallocSize, None],
+                ['syscall', 'None', 'None', 'None'],
+                ['subi', '$sp', '$sp', 4],
+                ['sw', '$v0', '($sp)', None]]
+
+    prefixCode2 = [['subi', '$sp', '$sp', 4],
+                ['sw', '$0', '($sp)', None]]
+
+    callCode = [['jal', 'main0', None, None],
+                ['nop', None, None, None],
+                ['li', '$v0', 10, None],
+                ['syscall', None, None, None]]
+
+    code = callCode + code
+    if mallocSize:
+        i = -9
+        code = prefixCode1 + code
+    else:
+        i = -6
+        code = prefixCode2 + code
+
+    revMap[i] = ['__start']
+
+    # Printing data section
+    if (data):
+        print('.data')
+        for item in data:
+            print(item)
+
+    # Printing code
+    print('.text')
+    for line in code:
+        if revMap.get(i):
+            for label in revMap[i]:
+                print(label + ':    ')
+
+        print('\t\t', end='')
+        for unit in line:
+            if unit is not None:
+                print(unit, end='\t')
+
+        i += 1
+        print()
+
 if __name__=="__main__":
     # initialize Parser
     parser = Parser()
@@ -31,11 +86,14 @@ if __name__=="__main__":
         tree = parser.parse_file(argv[2])
 
         parserObj = parser.parserObj
-        parserObj.recPrint(parserObj.gst, 0)
-        for item in parserObj.tac.data:
-            print(item)
-        for item in parserObj.tac.code:
-            print(item)
+        #  parserObj.recPrint(parserObj.gst, 0)
+
+        makeExecutable(parserObj.tac.data, parserObj.tac.code,
+                parserObj.tac.labelMap, parserObj.getMainSize())
+        #  for item in parserObj.tac.data:
+            #  print(item)
+        #  for item in parserObj.tac.code:
+            #  print(item)
 
         if len(argv) == 4:
             out_file = argv[2]
