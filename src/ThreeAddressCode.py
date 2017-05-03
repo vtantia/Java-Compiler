@@ -62,16 +62,36 @@ class ThreeAddressCode(object):
         self.data.append(name + ': .word\t' + val)
         return name
 
-    def returnFunc(self):
+    def returnFunc(self, sizeParams):
         self.emit('mov', '$sp', '$30')
         self.emit('lw', '$30', '($sp)')
         self.emit('lw', '$31', '4($sp)')
         self.emit('addi', '$sp', '$sp', 8)
+        self.emit('addi', '$sp', '$sp', sizeParams)
         self.emit('JR', '$31')
 
-    def methodInvocation(self, tempList):
+    def pushParams(self, tempList):
         if tempList:
             self.emit('subi', '$sp', '$sp', 4*len(tempList))
 
         for i in range(0, len(tempList)):
-            self.emit('mov', tempList[i], str(4*i) + '($sp)')
+            self.emit('sw', tempList[i], str(4*i) + '($sp)')
+
+    def getDynamicMem(self, size):
+        self.emit('li', '$v0', 9)
+        self.emit('li', '$a0', size)
+        self.emit('syscall')
+
+    # Used for constructor
+    def commonInvocation(self, pObj, pArg, func):
+        if pArg:
+            self.tac.pushParams([pObj.temporary] + pArg.tempList)
+        else:
+            self.tac.pushParams([pObj.temporary])
+
+        self.tac.emit('jal', func['funcLabel'])
+        self.tac.emit('nop')
+
+    def methodInvocation(self, pObj, pArg, func):
+        self.commonInvocation(pObj, pArg, func)
+        self.emit('mov', pObj.temporary, '$v0')

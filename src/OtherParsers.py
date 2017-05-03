@@ -446,6 +446,8 @@ class ExpressionParser(BaseParser):
                                 | array_access'''
         self.gen(p, 'primary_no_new_array')
         if p[0].astName == 'this':
+            p[0].temporary = self.tac.allotNewTemp()
+            self.tac.emit('lw', p[0].temporary, '8($30)' )
             for scope in reversed(self.symTabStack):
                 if scope.get('desc') == 'class':
                     p[0].nodeType = Node.Type(baseType=scope['scope_name'])
@@ -772,10 +774,9 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
-        if p[3]:
-            self.tac.methodInvocation(p[3].tempList)
-
-        self.tac.emit('jal', func['funcLabel'])
+        p[0].temporary = self.tac.allotNewTemp()
+        self.tac.emit('lw', p[0].temporary, '8($30)')
+        self.tac.methodInvocation(p[0], p[3], func)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -785,11 +786,9 @@ class StatementParser(BaseParser):
                              | primary '.' NAME '(' argument_list_opt ')' '''
         self.gen(p, 'method_invocation')
 
+        self.resolveScope(p[1])
         # fetch the symbol table entry for method
-        if p[1].astName == 'name':
-            func = self.findVar(p[1].qualName + [p[3].astName])
-        else:
-            func = self.findAttribute(p[1].nodeType, p[3].astName)
+        func = self.findAttribute(p[1].nodeType, p[3].astName)
 
         # fetch the return type, false if no function exists
         node_type = self.checkMethodInvocation(func, p[3].astName,
@@ -798,7 +797,8 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
-        self.tac.emit('jal', func['funcLabel'])
+        p[0].temporary = self.tac.allotNewTemp()
+        self.tac.methodInvocation(p[1], p[5], func)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1120,7 +1120,7 @@ class StatementParser(BaseParser):
         if p[2]:
             self.tac.emit('mov', '$v0', p[2].temporary)
 
-        self.tac.returnFunc()
+        self.tac.returnFunc(funcScope['sizeParams'])
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1140,7 +1140,11 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
-        self.tac.emit('jal', construct['funcLabel'])
+        self.tac.getDynamicMem(class_entry['size'])
+        p[0].temporary = self.tac.allotNewTemp()
+        self.tac.emit('mov', p[0].temporary, '$v0')
+
+        self.tac.commonInvocation(p[0], p[4], construct)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1606,6 +1610,8 @@ class ClassParser(BaseParser):
         self.gen(p, 'constructor_declaration')
         currScope = self.symTabStack[-1]
 
+        self.tac.returnFunc(currScope['sizeParams'])
+
         self.endCurrScope()
         self.tac.code[currScope['sizePatch']][3] = currScope['size']
 
@@ -1713,7 +1719,7 @@ class ClassParser(BaseParser):
         self.gen(p, 'method_declaration')
         currScope = self.symTabStack[-1]
 
-        self.tac.returnFunc()
+        self.tac.returnFunc(currScope['sizeParams'])
 
         self.endCurrScope()
         self.tac.code[currScope['sizePatch']][3] = currScope['size']

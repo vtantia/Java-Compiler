@@ -183,7 +183,7 @@ class BaseParser(TypeChecking):
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
                 var.temporary = self.tac.allotNewTemp()
-                self.tac.emit('lw', var.temporary, str(-symTabEntry['offset']) + '($bp)' )
+                self.tac.emit('lw', var.temporary, str(-symTabEntry['offset']) + '($30)' )
 
     def checkMethodInvocation(self, func, f_name, argList):
 
@@ -245,13 +245,13 @@ class BaseParser(TypeChecking):
     def startNewMethodDef(self, name, retType):
         currScope = self.symTabStack[-1]
         currScope['type'] = retType
-        currScope['size'] = -8
+        currScope['size'] = -12
         currScope['funcLabel'] = self.tac.getLabelFunc(name)
 
     def startNewMethodDef2(self):
         currScope = self.symTabStack[-1]
 
-        currScope['sizeParams'] = - (currScope['size'] + 8)
+        currScope['sizeParams'] = -currScope['size'] - 8
         currScope['size'] = 0
 
         # Push return address, save bp and copy sp to bp
