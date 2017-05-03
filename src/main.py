@@ -32,8 +32,10 @@ if __name__=="__main__":
 
         parserObj = parser.parserObj
         parserObj.recPrint(parserObj.gst, 0)
-        print(parserObj.tac.data)
-        print(parserObj.tac.code)
+        for item in parserObj.tac.data:
+            print(item)
+        for item in parserObj.tac.code:
+            print(item)
 
         if len(argv) == 4:
             out_file = argv[2]

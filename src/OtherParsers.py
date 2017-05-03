@@ -1727,6 +1727,7 @@ class ClassParser(BaseParser):
         currScope = self.symTabStack[-1]
         currScope['size'] = -8
         currScope['type'] = p[2].nodeType
+        currScope['tacStart'] = self.tac.nextquad()
         self.gen(p, 'method_header_name')
 
         if p[0]:

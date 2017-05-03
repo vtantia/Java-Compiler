@@ -252,10 +252,14 @@ class TypeChecking(object):
             a.dim = b.dim
             if a.baseType == b.baseType:
                 flag, finalType = True, a.baseType
-            elif self.lca(a,b) == a.baseType:
+            elif a.baseType == 'boolean' or b.baseType == 'boolean':
+                flag, err = False, "Base type mismatch error {} <- {}".format(
+                        a.baseType, b.baseType)
+            elif self.lca(a, b) == a.baseType:
                 flag, finalType = True, a.baseType
             else:
-                flag, err = False, "Base type mismatch error"
+                flag, err = False, "Base type mismatch error {} <- {}".format(
+                        a.baseType, b.baseType)
 
         if flag:
             return finalType

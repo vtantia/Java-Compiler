@@ -4,11 +4,20 @@ class ThreeAddressCode(object):
         self.code = []
         self.curTempCnt = 0
         self.data = []
+        self.labelMap = {}
 
     def emit(self, opCode, arg1=None, arg2=None, arg3=None):
         self.code += [[opCode, arg1, arg2, arg3]]
 
-    def backpatch(self, bpList, jumpAddress):
+    def backpatch(self, bpList, jumpAddress, label=None):
+        if self.labelMap.get(label):
+            if self.labelMap[label] != jumpAddress:
+                label = None
+
+        if not label:
+            label = 'label' + str(len(self.labelMap))
+        self.labelMap[label] = jumpAddress
+
         for lineNo in bpList:
             if not isinstance(lineNo, int):
                 print('Wrong Entry {} passed to backpatch in backpatch List'.
@@ -21,7 +30,7 @@ class ThreeAddressCode(object):
                 else:
                     # Assuming jump address is always at first position for
                     # jump instructions
-                    toPatch[1] = jumpAddress
+                    toPatch[1] = label
 
     def nextquad(self):
         return len(self.code)

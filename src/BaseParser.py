@@ -207,7 +207,7 @@ class BaseParser(TypeChecking):
 
                         print('Incompatible argument type passed to method {} at line #{}'.
                                 format(f_name, self.lexer.lineno))
-                        print('for parameter {}, Expected type: {}{}, argument type: {}{}'.
+                        print('for parameter {}, Expected type: {} {}, argument type: {} {}'.
                             format(parList[i], expected_type.baseType, len(expected_type.dim),
                                     argument_type.baseType, len(argument_type.dim)))
 
