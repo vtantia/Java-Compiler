@@ -451,7 +451,7 @@ class ExpressionParser(BaseParser):
                                 | array_access'''
         self.gen(p, 'primary_no_new_array')
         if p[0].astName == 'this':
-            p[0].temporary = self.tac.allotNewTemp()
+            p[0].temporary = self.allotNewTemp()
             self.tac.emit('lw', p[0].temporary, '8($30)' )
             for scope in reversed(self.symTabStack):
                 if scope.get('desc') == 'class':
@@ -779,7 +779,7 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         self.tac.emit('lw', p[0].temporary, '8($30)')
         self.tac.methodInvocation(p[0], p[3], func)
 
@@ -802,7 +802,7 @@ class StatementParser(BaseParser):
         if node_type:
             p[0].nodeType = deepcopy(node_type)
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         self.tac.methodInvocation(p[1], p[5], func)
 
         if p[0]:
@@ -1123,7 +1123,7 @@ class StatementParser(BaseParser):
             print('Invalid return type on line #{}'.format(self.lexer.lineno))
 
         if p[2]:
-            self.tac.emit('mov', '$v0', p[2].temporary)
+            self.tac.emit('move', '$v0', p[2].temporary)
 
         self.tac.returnFunc(funcScope['sizeParams'])
 
@@ -1146,8 +1146,8 @@ class StatementParser(BaseParser):
             p[0].nodeType = deepcopy(node_type)
 
         self.tac.getDynamicMem(class_entry['size'])
-        p[0].temporary = self.tac.allotNewTemp()
-        self.tac.emit('mov', p[0].temporary, '$v0')
+        p[0].temporary = self.allotNewTemp()
+        self.tac.emit('move', p[0].temporary, '$v0')
 
         self.tac.commonInvocation(p[0], p[4], construct)
 
@@ -1200,7 +1200,7 @@ class StatementParser(BaseParser):
                 assert p[1].nodeType.dim[i]
                 unitSize *= p[1].nodeType.dim[i]
 
-            p[0].temporary = self.tac.allotNewTemp()
+            p[0].temporary = self.allotNewTemp()
             self.tac.emit('addi', p[0].temporary,'$0', unitSize)
             self.tac.emit('mul', p[3].temporary, p[0].temporary)
             self.tac.emit('mflo', p[0].temporary)
@@ -1320,7 +1320,7 @@ class LiteralParser(BaseParser):
             print('Not a matching type at line #{}'.format(self.lexer.lineno))
         p[0].nodeType.baseType = litType
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         asciiVal = int(p[1].astName)
         if abs(asciiVal) < 32768:
             # OPT
@@ -1337,7 +1337,7 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'char'
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         asciiVal = ord(p[1].astName)
         self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
 
@@ -1349,7 +1349,7 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'String'
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         varName = self.tac.addDataString(p[1].astName)
         self.tac.emit('la', p[0].temporary, varName)
 
@@ -1362,7 +1362,7 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'boolean'
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         asciiVal = 1 if p[1].astName == 'true' else 0
         self.tac.emit('addi', p[0].temporary, '$0', asciiVal)
 
@@ -1374,7 +1374,7 @@ class LiteralParser(BaseParser):
         self.gen(p, 'literal')
         p[0].nodeType.baseType = 'null'
 
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         self.tac.emit('add', p[0].temporary, '$0', '$0')
 
         if p[0]:

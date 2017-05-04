@@ -3,6 +3,7 @@ import Node
 from TypeChecking import TypeChecking
 from copy import deepcopy
 from ThreeAddressCode import ThreeAddressCode
+from Temp import Temp
 
 
 class BaseParser(TypeChecking):
@@ -19,6 +20,7 @@ class BaseParser(TypeChecking):
         self.tac = ThreeAddressCode()
         self.ctr = 0
         self.currFile = ''
+        self.curTempCnt = 0
 
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
@@ -182,7 +184,7 @@ class BaseParser(TypeChecking):
             symTabEntry = self.findVar(var.qualName)
             if symTabEntry:
                 var.nodeType = symTabEntry['type']
-                var.temporary = self.tac.allotNewTemp()
+                var.temporary = self.allotNewTemp()
                 self.tac.emit('lw', var.temporary, str(-symTabEntry['offset']) + '($30)' )
 
     def checkMethodInvocation(self, func, f_name, argList):
@@ -258,7 +260,7 @@ class BaseParser(TypeChecking):
         self.tac.emit('subi', '$sp', '$sp', 8)
         self.tac.emit('sw', '$31', '4($sp)')
         self.tac.emit('sw', '$30', '($sp)')
-        self.tac.emit('mov', '$30', '$sp')
+        self.tac.emit('move', '$30', '$sp')
 
         # Will be later patched when the size is computed
         # stack offset for this method's local variable
@@ -278,3 +280,8 @@ class BaseParser(TypeChecking):
                 mainSize = self.gst[key]['size']
 
         return mainSize
+
+    def allotNewTemp(self):
+        self.curTempCnt += 1
+        temp = Temp(self.curTempCnt, self.symTabStack[-1])
+        return temp #'t' + str(self.curTempCnt)
