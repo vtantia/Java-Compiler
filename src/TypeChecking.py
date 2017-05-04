@@ -137,7 +137,7 @@ class TypeChecking(object):
             self.tac.emit('bne', p[1].temporary, p[3].temporary, '...')
 
         else:
-            p[0].temporary = self.tac.allotNewTemp()
+            p[0].temporary = self.allotNewTemp()
             self.tac.emit('sub', p[0].temporary, p[1].temporary, p[3].temporary)
 
             if p[0].astName == '<':
@@ -168,7 +168,7 @@ class TypeChecking(object):
             p[0].tacLists.falseList = p[3].tacLists.falseList
 
     def handle_addmult(self, p):
-        p[0].temporary = self.tac.allotNewTemp()
+        p[0].temporary = self.allotNewTemp()
         if p[0].astName == '+':
             self.tac.emit('add', p[0].temporary, p[1].temporary, p[3].temporary)
         elif p[0].astName == '-':
@@ -281,7 +281,7 @@ class TypeChecking(object):
             if p[1].nodeType.baseType in self.intsCharWoLong:
                 p[0].nodeType.baseType = 'int'
 
-                p[0].temporary = self.tac.allotNewTemp()
+                p[0].temporary = self.allotNewTemp()
                 self.tac.emit('multi', p[2].temporary, -1)
                 self.tac.emit('mflo', p[0].temporary)
 
