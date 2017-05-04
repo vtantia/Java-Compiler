@@ -404,6 +404,9 @@ class ExpressionParser(BaseParser):
                               | post_decrement_expression'''
         self.gen(p, 'postfix_expression')
         self.resolveScope(p[0])
+        if p[1].astName == 'name':
+            p[1].reference = self.allotNewTemp()
+            self.tac.emit('lw', p[1].reference, str(-p[1].offset) + '$(30)')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -452,7 +455,7 @@ class ExpressionParser(BaseParser):
         self.gen(p, 'primary_no_new_array')
         if p[0].astName == 'this':
             p[0].temporary = self.tac.allotNewTemp()
-            self.tac.emit('lw', p[0].temporary, '8($30)' )
+            self.tac.emit('lw', p[0].temporary, '8($30)')
             for scope in reversed(self.symTabStack):
                 if scope.get('desc') == 'class':
                     p[0].nodeType = Node.Type(baseType=scope['scope_name'])
@@ -1172,7 +1175,10 @@ class StatementParser(BaseParser):
         # if offset, then add to address
         if data_node['offset']:
             self.tac.emit('addi', p[0].temporary, p[1].temporary, data_node['offset'])
+            p[0].reference = self.allotNewTemp()
+            self.tac.emit('move', p[0].reference, p[0].temporary)
             self.tac.emit('lw', p[0].temporary, '(' + p[0].temporary + ')')
+
 
         if data_node:
             p[0].nodeType = data_node['type']
@@ -1208,6 +1214,8 @@ class StatementParser(BaseParser):
                     p[0].temporary)
 
             if len(p[1].nodeType.dim) == 1:
+                p[0].reference = self.allotNewTemp()
+                self.tac.emit('move', p[0].reference, p[0].temporary)
                 self.tac.emit('lw', p[0].temporary, '(' + p[0].temporary + ')')
 
             p[0].nodeType.dim = p[0].nodeType.dim[1:]

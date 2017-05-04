@@ -28,6 +28,7 @@ class Node(object):
         self.qualName = qualName
         self.tacLists = tacLists if tacLists is not None else TacLists()
         self.temporary = temporary # To store the temporary in which this node is present
+        self.reference = None
 
     def isPrim(self):
         return self.nodeType.isPrim()

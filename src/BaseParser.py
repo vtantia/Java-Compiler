@@ -184,6 +184,7 @@ class BaseParser(TypeChecking):
                 var.nodeType = symTabEntry['type']
                 var.temporary = self.tac.allotNewTemp()
                 self.tac.emit('lw', var.temporary, str(-symTabEntry['offset']) + '($30)' )
+                var.offset = symTabEntry['offset']
 
     def checkMethodInvocation(self, func, f_name, argList):
 
