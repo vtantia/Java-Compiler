@@ -65,9 +65,14 @@ class ExpressionParser(BaseParser):
 
     def p_conditional_expression(self, p):
         '''conditional_expression : conditional_or_expression
-                                  | conditional_or_expression '?' expression ':' conditional_expression'''
+                                  | conditional_or_expression '?' expression N ':' conditional_expression'''
         self.gen(p, 'conditional_expression')
         self.binary_exp_cond(p)
+
+        if len(p)>2:
+            S, C, S1, S2 = p[0], p[1], p[3], p[5]
+            self.tac.backpatch(C.tacLists.falseList, S1.codeEnd)
+            S.tacLists = S1.tacLists + S2.tacLists
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -534,7 +539,7 @@ class StatementParser(BaseParser):
         ''' N : empty '''
         p[0] = self.makeMarkerNode()
         p[0].tacLists.nextList = [self.tac.nextquad()]
-        self.tac.emit('JMP')
+        self.tac.emit('j', '...')
 
         p[0].codeEnd = self.tac.nextquad()
 
@@ -1087,7 +1092,7 @@ class StatementParser(BaseParser):
         self.gen(p, 'break_statement')
 
         p[0].tacLists.brkList = [self.tac.nextquad()]
-        self.tac.emit('JMP')
+        self.tac.emit('j', '...')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -1098,7 +1103,7 @@ class StatementParser(BaseParser):
         self.gen(p, 'continue_statement')
 
         p[0].tacLists.contList = [self.tac.nextquad()]
-        self.tac.emit('JMP')
+        self.tac.emit('j', '...')
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

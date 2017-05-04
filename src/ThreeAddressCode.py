@@ -9,7 +9,7 @@ class ThreeAddressCode(object):
     def emit(self, opCode, arg1=None, arg2=None, arg3=None):
         self.code += [[opCode, arg1, arg2, arg3]]
 
-    def backpatch(self, bpList, jumpAddress, label=None):
+    def backpatch(self, bpList, jumpAddress, label=None): #Why label None
         label = self.getLabel(label, jumpAddress)
 
         for lineNo in bpList:
@@ -18,13 +18,9 @@ class ThreeAddressCode(object):
                         format(lineNo))
             else:
                 toPatch = self.code[lineNo]
-                # Every Jump OpCode starts with letter 'J'
-                if toPatch[0][0] is not 'J':
-                    print('Wrong Entry to patch: {}'.format(toPatch))
-                else:
-                    # Assuming jump address is always at first position for
-                    # jump instructions
-                    toPatch[1] = label
+                for i in range(len(toPatch)):
+                    if type(toPatch[i]) == 'str':
+                        toPatch[i] = toPatch[i].replace('...', 'label')
 
     def getLabel(self, label, jumpAddress):
         if self.labelMap.get(label):
@@ -68,7 +64,7 @@ class ThreeAddressCode(object):
         self.emit('lw', '$31', '4($sp)')
         self.emit('addi', '$sp', '$sp', 8)
         self.emit('addi', '$sp', '$sp', sizeParams)
-        self.emit('JR', '$31')
+        self.emit('jr', '$31')
 
     def pushParams(self, tempList):
         if tempList:

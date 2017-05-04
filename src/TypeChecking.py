@@ -57,6 +57,7 @@ class TypeChecking(object):
             return
 
         p[0].nodeType = Node.Type(baseType='boolean')
+        self.handle_bool(p)
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
         if type1 != 'boolean' or type2 != 'boolean':
@@ -72,6 +73,7 @@ class TypeChecking(object):
             return
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
+        self.handle_addmult(p)
         if type1 == 'boolean' and type2 == 'boolean':
             p[0].nodeType.baseType = 'boolean'
         elif type1 in self.intsChar and type2 in self.intsChar:
@@ -92,6 +94,7 @@ class TypeChecking(object):
             return
 
         p[0].nodeType.baseType = 'boolean'
+        self.handle_rel(p)
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
         oper = p[2].astName
@@ -117,11 +120,85 @@ class TypeChecking(object):
             return
 
         type1, type2 = p[1].nodeType.baseType, p[3].nodeType.baseType
+        self.handle_addmult()
+
         if type1 in self.intsChar and type2 in self.intsChar:
             p[0].nodeType.baseType = 'long' if (type1 == 'long' or type2 == 'long') else 'int'
         else:
             p[0].nodeType.baseType = 'int'
             print('Not matching types for {} at line #{}'.format(p[0].astName, self.lexer.lineno))
+
+    def handle_rel(self, p):
+
+        if p[0].astName == '==':
+            self.tac.emit('beq', p[1].temporary, p[3].temporary, '...')
+
+        elif p[0].astName == '!=':
+            self.tac.emit('bne', p[1].temporary, p[3].temporary, '...')
+
+        else:
+            p[0].temporary = self.tac.allotNewTemp()
+            self.tac.emit('sub', p[0].temporary, p[1].temporary, p[3].temporary)
+
+            if p[0].astName == '<':
+                self.tac.emit('bltz', p[0].temporary, '...')
+
+            elif p[0].astName == '>':
+                self.tac.emit('bgtz', p[0].temporary, '...')
+
+            elif p[0].astName == '<=':
+                self.tac.emit('blez', p[0].temporary, '...')
+
+            elif p[0].astName == '>=':
+                self.tac.emit('bgez', p[0].temporary, '...')
+
+        p[0].tacLists.trueList = [self.tac.nextquad()-1]
+        p[0].tacLists.falseList = [self.tac.nextquad()]
+        self.tac.emit('j', '...')
+
+    def handle_bool(self, p):
+        if p[0].astName == '&&':
+            self.tac.backpatch(p[1].tacLists.trueList, p[1].codeEnd)
+            p[0].tacLists.trueList = p[3].tacLists.trueList
+            p[0].tacLists.falseList = p[1].tacLists.falseList + p[3].tacLists.falseList
+
+        elif p[0].astName == '||':
+            self.tac.backpatch(p[1].tacLists.falseList, p[1].codeEnd)
+            p[0].tacLists.trueList = p[1].tacLists.trueList + p[3].tacLists.trueList
+            p[0].tacLists.falseList = p[3].tacLists.falseList
+
+    def handle_addmult(self, p):
+        p[0].temporary = self.tac.allotNewTemp()
+        if p[0].astName == '+':
+            self.tac.emit('add', p[0].temporary, p[1].temporary, p[3].temporary)
+        elif p[0].astName == '-':
+            self.tac.emit('sub', p[0].temporary, p[1].temporary, p[3].temporary)
+        elif p[0].astName == '*':
+            self.tac.emit('mult', p[1].temporary, p[3].temporary)
+            self.tac.emit('mflo', p[0].temporary)
+
+        elif p[0].astName == '/':
+            self.tac.emit('div', p[1].temporary, p[3].temporary)
+            self.tac.emit('mflo', p[0].temporary)
+
+        elif p[0].astName == '%':
+            self.tac.emit('div', p[1].temporary, p[3].temporary)
+            self.tac.emit('mfhi', p[0].temporary)
+
+        elif p[0].astName == '<<':
+            self.tac.emit('sllv', p[0].temporary, p[1].temporary, p[3].temporary)
+
+        elif p[0].astName == '>>':
+            self.tac.emit('srlv', p[0].temporary, p[1].temporary, p[3].temporary)
+
+        elif p[0].astName == '&':
+            self.tac.emit('and', p[0].temporary, p[1].temporary, p[3].temporary)
+
+        elif p[0].astName == '|':
+            self.tac.emit('or', p[0].temporary, p[1].temporary, p[3].temporary)
+
+        elif p[0].astName == '^':
+            self.tac.emit('xor', p[0].temporary, p[1].temporary, p[3].temporary)
 
     def binary_exp_addmult(self, p):
         if len(p) == 2:
@@ -134,13 +211,15 @@ class TypeChecking(object):
 
         if p[0].astName != '%':
             if type1 in self.numsChar and type2 in self.numsChar:
-                for type in ['double', 'float', 'long']:
+                for type in ['double', 'float', 'long']: #TODO
                     if type1 == type or type2 == type:
                         p[0].nodeType.baseType = type
                         break
                 else:
                     p[0].nodeType.baseType = 'int'
-            elif p[2].astName == '+' and (type1 == "String" or type2 == "String"):
+                    self.handle_addmult(p)
+
+            elif p[2].astName == '+' and (type1 == "String" or type2 == "String"):#TODO
                 p[0].nodeType.baseType = 'String'
             else:
                 p[0].nodeType.baseType = 'int'
@@ -156,7 +235,13 @@ class TypeChecking(object):
         if self.checkRef(p[2], p[1]):
             return
 
+        p[0].temporary = self.allotNewTemp()
+
         if p[0].astName == '~':
+            temp = self.allotNewTemp()
+            self.tac.emit('addi', temp, '$0', -1)
+            self.tac.emit('xor', p[0].temporary, p[2].temporary, temp)
+
             p[0].nodeType.baseType = 'int'
             if p[2].nodeType.baseType in self.intsCharWoLong:
                 pass
@@ -167,6 +252,8 @@ class TypeChecking(object):
                     self.lexer.lineno))
 
         if p[0].astName == '!':
+            self.tac.emit('nor', p[0].temporary, p[2].temporary, '$0')
+
             p[0].nodeType.baseType = 'boolean'
             if p[2].nodeType.baseType != 'boolean':
                 print('Not a matching type for ! at line #{}'.format(
@@ -193,6 +280,11 @@ class TypeChecking(object):
         if p[0].astName in ['+', '-']:
             if p[1].nodeType.baseType in self.intsCharWoLong:
                 p[0].nodeType.baseType = 'int'
+
+                p[0].temporary = self.tac.allotNewTemp()
+                self.tac.emit('multi', p[2].temporary, -1)
+                self.tac.emit('mflo', p[0].temporary)
+
             elif p[1].nodeType.baseType in self.decimals + ['long']:
                 p[0].nodeType.baseType = p[2].nodeType.baseType
             else:
