@@ -118,7 +118,9 @@ class ThreeAddressCode(object):
         else:
             self.pushParams([pObj.temporary])
 
-        self.emit('jal', func['funcLabel'])
+        if func:
+            self.emit('jal', func['funcLabel'])
+
         self.emit('nop')
 
     def methodInvocation(self, pObj, pArg, func):

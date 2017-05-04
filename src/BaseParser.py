@@ -22,6 +22,30 @@ class BaseParser(TypeChecking):
         self.currFile = ''
         self.curTempCnt = 0
 
+        self.startNewScope('System', 'class')
+        self.startNewScope('printInt', 'method')
+
+        currScope = self.symTabStack[-1]
+        currScope['parList'] = ['a']
+        currScope['a'] = {'type': Node.Type(baseType = 'int'),
+                'size': 4,
+                'offset': -12}
+
+        self.startNewMethodDef('printInt', Node.Type(baseType = 'void'))
+        currScope['size'] = -16
+        self.startNewMethodDef2()
+
+        # Method body
+        self.tac.emit('li', '$v0', 1)
+        self.tac.emit('lw', '$a0', '12($30)')
+        self.tac.emit('syscall')
+
+        self.tac.returnFunc(currScope['sizeParams'])
+        self.endCurrScope()
+
+        self.tac.code[currScope['sizePatch']][3] = currScope['size']
+        self.endCurrScope()
+
     def startNewScope(self, name, desc):
         currTable = self.symTabStack[-1]
         if not currTable.get(name):
