@@ -2,12 +2,13 @@ from Temp import Temp
 
 class ThreeAddressCode(object):
 
-    def __init__(self):
+    def __init__(self, parent):
         self.code = []
         self.data = []
         self.labelMap = {}
+        self.parent = parent
 
-    def emit(self, opCode, *arg):#arg1=None, arg2=None, arg3=None):
+    def emit(self, opCode, *arg, tmpStart=0):#arg1=None, arg2=None, arg3=None):
         arr2 = ['fake' + opCode]
         arr = [opCode]
         isCalc = opCode in ['subi', 'lw', 'move', 'addi', 'mflo', 'mfhi', 'add', 'la', 'li', 'sub', 'sllv', 'srlv', 'and', 'or', 'xor', 'nor']
@@ -19,10 +20,17 @@ class ThreeAddressCode(object):
                 arr.append(item)
                 arr2.append(item)
             else:
-                regStr = '$t' + str(i)
-                if not isCalc or i != 0:
+                regStr = '$t' + str(i+tmpStart)
+                if opCode == 'sw' and i == 1:
+                    temp = self.parent.allotNewTemp()
+                    self.emit('lw', temp, str(-item.offset) + '($30)', tmpStart = 1)
+                    arr.append('($t1)')
+                    # arr.append(str(-temp.offset) + '($30)')
+                elif not isCalc or i != 0:
                     self.emit('lw', regStr, str(-item.offset) + '($30)')
-                arr.append(regStr)
+                    arr.append(regStr)
+                else:
+                    arr.append(regStr)
                 arr2.append('temp' + str(item.tempNum))
                 addFake = True
 

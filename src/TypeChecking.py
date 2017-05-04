@@ -367,5 +367,8 @@ class TypeChecking(object):
             func(p)
             self.checkTypeAssignment(p[1], p[0])
             p[2].astName = tmp
+            self.tac.emit('sw', p[0].temporary, p[1].reference)
         else:
             self.checkTypeAssignment(p[1], p[3])
+            # print("reference: ", p[1].reference.offset)
+            self.tac.emit('sw', p[3].temporary, p[1].reference)

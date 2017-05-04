@@ -403,10 +403,11 @@ class ExpressionParser(BaseParser):
                               | post_increment_expression
                               | post_decrement_expression'''
         self.gen(p, 'postfix_expression')
-        self.resolveScope(p[0])
         if p[1].astName == 'name':
+            self.resolveScope(p[0])
             p[1].reference = self.allotNewTemp()
-            self.tac.emit('lw', p[1].reference, str(-p[1].offset) + '$(30)')
+            self.tac.emit('subi', p[1].reference, '$(30)', p[1].offset)
+
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
