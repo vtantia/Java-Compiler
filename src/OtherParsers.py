@@ -662,7 +662,10 @@ class StatementParser(BaseParser):
             lastTable['size'] = lastTable[varName]['offset']
 
             if len(p) == 4:
-                self.checkTypeAssignment(p[0], p[3])
+                p[0].temporary = self.allotNewTemp()
+                p[0].reference = self.allotNewTemp()
+                self.tac.emit('subi', p[0].reference, '$30', lastTable[varName]['offset'])
+                self.assign(self.mapping[p[2].astName], p)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()

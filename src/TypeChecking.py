@@ -282,7 +282,8 @@ class TypeChecking(object):
                 p[0].nodeType.baseType = 'int'
 
                 p[0].temporary = self.allotNewTemp()
-                self.tac.emit('multi', p[2].temporary, -1)
+                self.tac.emit('li', p[0].temporary, -1)
+                self.tac.emit('mult', p[2].temporary, p[0].temporary)
                 self.tac.emit('mflo', p[0].temporary)
 
             elif p[1].nodeType.baseType in self.decimals + ['long']:
@@ -369,6 +370,7 @@ class TypeChecking(object):
             p[2].astName = tmp
             self.tac.emit('sw', p[0].temporary, p[1].reference)
         else:
+            print("store called")
             self.checkTypeAssignment(p[1], p[3])
             # print("reference: ", p[1].reference.offset)
             self.tac.emit('sw', p[3].temporary, p[1].reference)
