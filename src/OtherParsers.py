@@ -406,7 +406,7 @@ class ExpressionParser(BaseParser):
         if p[1].astName == 'name':
             self.resolveScope(p[0])
             p[1].reference = self.allotNewTemp()
-            self.tac.emit('subi', p[1].reference, '$(30)', p[1].offset)
+            self.tac.emit('subi', p[1].reference, '$30', p[1].offset)
 
 
         if p[0]:
@@ -582,6 +582,10 @@ class StatementParser(BaseParser):
                             | block_statements block_statement'''
         self.gen(p, 'block_statements')
 
+        if len(p) == 3:
+            self.tac.backpatch(p[1].tacLists.nextList, p[1].codeEnd)
+            p[0].tacLists = p[2].tacLists
+
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
 
@@ -690,6 +694,8 @@ class StatementParser(BaseParser):
                      | for_statement'''
         self.gen(p, 'statement')
         self.tac.curTempCnt = 0
+
+        self.tac.backpatch(p[1].tacLists.nextList, p[1].codeEnd)
 
         if p[0]:
             p[0].codeEnd = self.tac.nextquad()
@@ -872,7 +878,7 @@ class StatementParser(BaseParser):
         self.tac.backpatch(S.tacLists.nextList + N.tacLists.nextList,
                 M.codeEnd)
         self.tac.backpatch(S.tacLists.contList, M.codeEnd)
-        S.tacLists.nextList = E.tacLists.falseList + S.tacLists.brkList
+        W.tacLists.nextList = E.tacLists.falseList + S.tacLists.brkList
 
     def p_while_statement(self, p):
         '''while_statement : WHILE M '(' expression ')' statement N'''

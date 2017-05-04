@@ -55,9 +55,9 @@ class ThreeAddressCode(object):
                         format(lineNo))
             else:
                 toPatch = self.code[lineNo]
-                for i in range(len(toPatch)):
-                    if type(toPatch[i]) == 'str':
-                        toPatch[i] = toPatch[i].replace('...', 'label')
+                for i in range(0, len(toPatch)):
+                    if toPatch[i] == '...':
+                        toPatch[i] = toPatch[i].replace('...', label)
 
     def getLabel(self, label, jumpAddress):
         if self.labelMap.get(label):
